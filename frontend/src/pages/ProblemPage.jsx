@@ -27,7 +27,7 @@ import SubmissionsList from "../components/SubmissionList";
 const ProblemPage = () => {
   const { id } = useParams();
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
-  const { submission:submissions, isLoading: isSubmissionsLoading, getSubmissionForProblem , getSubmissionCountForProblem , submissionCount } = useSubmissionStore();
+  const { submission: submissions, isLoading: isSubmissionsLoading, getSubmissionForProblem, getSubmissionCountForProblem, submissionCount } = useSubmissionStore();
   const [code, setCode] = useState("");
   const [activeTab, setActiveTab] = useState("description");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -104,29 +104,29 @@ const ProblemPage = () => {
                 {Object.entries(problem.examples).map(([lang, example], idx) => (
                   <div key={lang} className="bg-base-200 p-6 rounded-xl mb-6 font-mono">
                     <div className="mb-4">
-                    <div className="text-indigo-300 mb-2 text-base font-semibold">
-                                Input:
-                              </div>
-                              <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
-                                {example.input}
-                              </span>
+                      <div className="text-indigo-300 mb-2 text-base font-semibold">
+                        Input:
+                      </div>
+                      <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
+                        {example.input}
+                      </span>
                     </div>
                     <div className="mb-4">
-                    <div className="text-indigo-300 mb-2 text-base font-semibold">
-                                Output:
-                              </div>
-                              <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
-                                {example.output}
-                              </span>
+                      <div className="text-indigo-300 mb-2 text-base font-semibold">
+                        Output:
+                      </div>
+                      <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white">
+                        {example.output}
+                      </span>
                     </div>
                     {example.explanation && (
                       <div>
- <div className="text-emerald-300 mb-2 text-base font-semibold">
-                                  Explanation:
-                                </div>
-                                <p className="text-base-content/70 text-lg font-sem">
-                                  {example.explanation}
-                                </p>
+                        <div className="text-emerald-300 mb-2 text-base font-semibold">
+                          Explanation:
+                        </div>
+                        <p className="text-base-content/70 text-lg font-sem">
+                          {example.explanation}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -136,12 +136,12 @@ const ProblemPage = () => {
 
             {problem.constraints && (
               <>
-               <h3 className="text-xl font-bold mb-4">Constraints:</h3>
-                      <div className="bg-base-200 p-6 rounded-xl mb-6">
-                        <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                          {problem.constraints}
-                        </span>
-                      </div>
+                <h3 className="text-xl font-bold mb-4">Constraints:</h3>
+                <div className="bg-base-200 p-6 rounded-xl mb-6">
+                  <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
+                    {problem.constraints}
+                  </span>
+                </div>
               </>
             )}
           </div>
@@ -182,10 +182,10 @@ const ProblemPage = () => {
             <div className="flex items-center gap-2 text-sm text-base-content/70 mt-5">
               <Clock className="w-4 h-4" />
               <span>Updated {new Date(problem.createdAt).toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}</span>
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}</span>
               <span className="text-base-content/30">•</span>
               <Users className="w-4 h-4" />
               <span>{submissionCount} Submissions</span>
@@ -196,7 +196,7 @@ const ProblemPage = () => {
           </div>
         </div>
         <div className="flex-none gap-4">
-          <button 
+          <button
             className={`btn btn-ghost btn-circle ${isBookmarked ? 'text-primary' : ''}`}
             onClick={() => setIsBookmarked(!isBookmarked)}
           >
@@ -205,7 +205,7 @@ const ProblemPage = () => {
           <button className="btn btn-ghost btn-circle">
             <Share2 className="w-5 h-5" />
           </button>
-          <select 
+          <select
             className="select select-bordered select-primary w-40"
             value={selectedLanguage}
             onChange={handleLanguageChange}
@@ -268,7 +268,7 @@ const ProblemPage = () => {
                   Code Editor
                 </button>
               </div>
-              
+
               <div className="h-[600px] w-full">
                 <Editor
                   key={`${id}-${selectedLanguage}`}
@@ -294,7 +294,7 @@ const ProblemPage = () => {
 
               <div className="p-4 border-t border-base-300 bg-base-200">
                 <div className="flex justify-between items-center">
-                  <button 
+                  <button
                     className={`btn btn-primary gap-2 ${isExecuting ? 'loading' : ''}`}
                     onClick={handleRunCode}
                     disabled={isExecuting}
@@ -302,7 +302,12 @@ const ProblemPage = () => {
                     {!isExecuting && <Play className="w-4 h-4" />}
                     Run Code
                   </button>
-                  <button className="btn btn-success gap-2">
+                  <button
+                    className={`btn btn-success gap-2 ${isExecuting ? 'loading' : ''}`}
+                    onClick={handleRunCode}
+                    disabled={isExecuting}
+                  >
+                    {!isExecuting && <Play className="w-4 h-4" />}
                     Submit Solution
                   </button>
                 </div>
