@@ -9,6 +9,7 @@ import problemRoutes from './routes/problems.routes.js';
 import executeCodeRoutes from './routes/executeCode.routes.js';
 import playlistRoutes from './routes/playlist.routes.js';
 import submissionRoutes from './routes/submission.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/v1/problems', problemRoutes);
 app.use('/api/v1/execute-code', executeCodeRoutes);
 app.use('/api/v1/submissions', submissionRoutes);
 app.use('/api/v1/playlist', playlistRoutes);
+app.use('/api/v1/user', userRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
