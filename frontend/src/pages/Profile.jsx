@@ -6,6 +6,7 @@ import ProfileSubmission from "../components/ProfileSubmission";
 import ProblemSolvedByUser from "../components/ProblemSolvedByUser";
 import PlaylistProfile from "../components/PlaylistProfile";
 import BookmarkedProblems from "../components/BookmarkedProblems";
+import ContributionGraph from "../components/ContributionGraph";
 import { axiosInstance } from "../libs/axios";
 import toast from "react-hot-toast";
 
@@ -218,6 +219,7 @@ const Profile = () => {
 
       {/* Submissions and other content */}
       <div className="w-full max-w-6xl mx-auto space-y-6 px-2 md:px-4 pb-8 mt-6">
+        <ContributionGraph />
         <ProfileSubmission />
         <ProblemSolvedByUser />
         <BookmarkedProblems />
