@@ -21,6 +21,8 @@ import {
   Wand2,
   Plus,
   Trash2,
+  Sparkles,
+  Bot,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useProblemStore } from "../store/useProblemStore";
@@ -28,6 +30,7 @@ import { getLanguageId } from "../libs/utils";
 import { useExecutionStore } from "../store/useExecution";
 import { useSubmissionStore } from "../store/useSubmissionStore";
 import { useInteractionStore } from "../store/useInteractionStore";
+import { useAIStore } from "../store/useAIStore";
 import Submission from "../components/Submission";
 import SubmissionsList from "../components/SubmissionList";
 
@@ -36,6 +39,7 @@ const ProblemPage = () => {
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
   const { submission: submissions, isLoading: isSubmissionsLoading, getSubmissionForProblem, getSubmissionCountForProblem, submissionCount } = useSubmissionStore();
   const { interactionStatus, getInteractionStatus, likeProblem, unlikeProblem, bookmarkProblem, removeBookmark } = useInteractionStore();
+  const { hint, suggestion, isLoadingHint, isLoadingSuggestion, getHint, getSuggestion, clearAI } = useAIStore();
   const [code, setCode] = useState("");
   const [activeTab, setActiveTab] = useState("description");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -174,16 +178,67 @@ const ProblemPage = () => {
         return <div className="p-4 text-center text-base-content/70">No discussions yet</div>;
       case "hints":
         return (
-          <div className="p-4">
-            {problem?.hints ? (
+          <div className="p-4 space-y-4">
+            {/* Problem hints if available */}
+            {problem?.hints && (
               <div className="bg-base-200 p-6 rounded-xl">
-                <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                  {problem.hints}
-                </span>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-warning" />
+                  Problem Hint
+                </h4>
+                <p className="text-base-content/80">{problem.hints}</p>
               </div>
-            ) : (
-              <div className="text-center text-base-content/70">No hints available</div>
             )}
+
+            {/* AI Hints Section */}
+            <div className="card bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+              <div className="card-body p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Bot className="w-5 h-5 text-primary" />
+                  AI Assistant
+                  <span className="badge badge-sm badge-primary">Powered by Gemini</span>
+                </h4>
+
+                <div className="flex gap-2 mb-3">
+                  <button
+                    className={`btn btn-primary btn-sm gap-1 ${isLoadingHint ? 'loading' : ''}`}
+                    onClick={() => getHint(problem.description, code, selectedLanguage)}
+                    disabled={isLoadingHint}
+                  >
+                    {!isLoadingHint && <Sparkles className="w-4 h-4" />}
+                    Get Hint
+                  </button>
+                  <button
+                    className={`btn btn-secondary btn-sm gap-1 ${isLoadingSuggestion ? 'loading' : ''}`}
+                    onClick={() => getSuggestion(problem.description, code, selectedLanguage)}
+                    disabled={isLoadingSuggestion || !code}
+                  >
+                    {!isLoadingSuggestion && <Wand2 className="w-4 h-4" />}
+                    Review Code
+                  </button>
+                </div>
+
+                {hint && (
+                  <div className="bg-base-100 p-4 rounded-lg mb-2">
+                    <h5 className="text-sm font-semibold text-primary mb-1">💡 Hint</h5>
+                    <p className="text-sm text-base-content/80 whitespace-pre-wrap">{hint}</p>
+                  </div>
+                )}
+
+                {suggestion && (
+                  <div className="bg-base-100 p-4 rounded-lg">
+                    <h5 className="text-sm font-semibold text-secondary mb-1">🔍 Code Review</h5>
+                    <p className="text-sm text-base-content/80 whitespace-pre-wrap">{suggestion}</p>
+                  </div>
+                )}
+
+                {!hint && !suggestion && (
+                  <p className="text-sm text-base-content/60">
+                    Click "Get Hint" for algorithm guidance or "Review Code" for feedback on your solution.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         );
       default:
