@@ -42,13 +42,13 @@ const ProblemPage = () => {
   const { hint, suggestion, isLoadingHint, isLoadingSuggestion, getHint, getSuggestion, clearAI } = useAIStore();
   const [code, setCode] = useState("");
   const [activeTab, setActiveTab] = useState("description");
-  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [selectedLanguage, setSelectedLanguage] = useState("JAVASCRIPT");
   const [testCases, setTestCases] = useState([]);
   const [customTestCases, setCustomTestCases] = useState([{ input: "", expectedOutput: "" }]);
   const [showCustomTests, setShowCustomTests] = useState(false);
   const editorRef = useRef(null);
 
-  const { executeCode, submission, isExecuting } = useExecutionStore();
+  const { executeCode, submission, isExecuting, clearExecution } = useExecutionStore();
 
   // Handle editor mount
   const handleEditorDidMount = (editor, monaco) => {
@@ -66,11 +66,32 @@ const ProblemPage = () => {
     getProblemById(id);
     getSubmissionCountForProblem(id);
     getInteractionStatus(id);
+
+    // Clear previous execution results when shifting problems
+    clearExecution();
+
+    return () => {
+      // Clear AI hints/suggestions on unmount
+      clearAI();
+      clearExecution();
+    };
   }, [id]);
 
   useEffect(() => {
     if (problem) {
-      setCode(problem.codeSnippets?.[selectedLanguage] || submission?.sourceCode || "");
+      // Normalize snippets keys to uppercase for easier lookup
+      const snippets = problem.codeSnippets || {};
+      const normalizedSnippets = Object.keys(snippets).reduce((acc, key) => {
+        acc[key.toUpperCase()] = snippets[key];
+        return acc;
+      }, {});
+
+      // Use submission source code if it belongs to THIS problem, otherwise use default snippet
+      const initialCode = (submission?.problemId === id)
+        ? (submission.sourceCode?.[selectedLanguage] || submission.sourceCode || "")
+        : (normalizedSnippets[selectedLanguage.toUpperCase()] || "");
+
+      setCode(initialCode);
       setTestCases(
         problem.testCases?.map((tc) => ({
           input: tc.input,
@@ -78,7 +99,7 @@ const ProblemPage = () => {
         })) || []
       );
     }
-  }, [problem, selectedLanguage]);
+  }, [problem, selectedLanguage, id]);
 
   useEffect(() => {
     if (activeTab === "submissions" && id) {
@@ -86,12 +107,20 @@ const ProblemPage = () => {
     }
   }, [activeTab, id]);
 
-  console.log("Submissions:", JSON.stringify(submissions));
+
 
   const handleLanguageChange = (e) => {
-    const lang = e.target.value;
+    const lang = e.target.value.toUpperCase();
     setSelectedLanguage(lang);
-    setCode(problem.codeSnippets?.[lang] || "");
+
+    // Normalize snippets keys for lookup
+    const snippets = problem.codeSnippets || {};
+    const normalizedSnippets = Object.keys(snippets).reduce((acc, key) => {
+      acc[key.toUpperCase()] = snippets[key];
+      return acc;
+    }, {});
+
+    setCode(normalizedSnippets[lang] || "");
   };
 
   const handleRunCode = (e) => {
