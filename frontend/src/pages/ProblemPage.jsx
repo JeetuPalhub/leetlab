@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import {
   Play,
@@ -18,6 +18,9 @@ import {
   Heart,
   HeartOff,
   Home,
+  Wand2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useProblemStore } from "../store/useProblemStore";
@@ -37,8 +40,23 @@ const ProblemPage = () => {
   const [activeTab, setActiveTab] = useState("description");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [testCases, setTestCases] = useState([]);
+  const [customTestCases, setCustomTestCases] = useState([{ input: "", expectedOutput: "" }]);
+  const [showCustomTests, setShowCustomTests] = useState(false);
+  const editorRef = useRef(null);
 
   const { executeCode, submission, isExecuting } = useExecutionStore();
+
+  // Handle editor mount
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+  };
+
+  // Format code function
+  const formatCode = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.formatDocument').run();
+    }
+  };
 
   useEffect(() => {
     getProblemById(id);
@@ -290,16 +308,26 @@ const ProblemPage = () => {
                   theme="vs-dark"
                   value={code}
                   onChange={(value) => setCode(value || '')}
+                  onMount={handleEditorDidMount}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 16,
                     lineNumbers: 'on',
-                    roundedSelection: false,
+                    roundedSelection: true,
                     scrollBeyondLastLine: false,
                     readOnly: false,
                     automaticLayout: true,
                     tabSize: 2,
                     wordWrap: 'on',
+                    bracketPairColorization: { enabled: true },
+                    autoClosingBrackets: 'always',
+                    autoClosingQuotes: 'always',
+                    formatOnPaste: true,
+                    formatOnType: true,
+                    suggestOnTriggerCharacters: true,
+                    quickSuggestions: true,
+                    folding: true,
+                    foldingHighlight: true,
                   }}
                   loading={<div className="flex items-center justify-center h-full"><span className="loading loading-spinner loading-lg text-primary"></span></div>}
                 />
@@ -307,23 +335,91 @@ const ProblemPage = () => {
 
               <div className="p-4 border-t border-base-300 bg-base-200">
                 <div className="flex justify-between items-center">
-                  <button
-                    className={`btn btn-primary gap-2 ${isExecuting ? 'loading' : ''}`}
-                    onClick={handleRunCode}
-                    disabled={isExecuting}
-                  >
-                    {!isExecuting && <Play className="w-4 h-4" />}
-                    Run Code
-                  </button>
-                  <button
-                    className={`btn btn-success gap-2 ${isExecuting ? 'loading' : ''}`}
-                    onClick={handleRunCode}
-                    disabled={isExecuting}
-                  >
-                    {!isExecuting && <Play className="w-4 h-4" />}
-                    Submit Solution
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-ghost btn-sm gap-1"
+                      onClick={formatCode}
+                      title="Format Code (Shift+Alt+F)"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                      Format
+                    </button>
+                    <button
+                      className={`btn btn-ghost btn-sm gap-1 ${showCustomTests ? 'btn-active' : ''}`}
+                      onClick={() => setShowCustomTests(!showCustomTests)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Custom Tests
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className={`btn btn-primary gap-2 ${isExecuting ? 'loading' : ''}`}
+                      onClick={handleRunCode}
+                      disabled={isExecuting}
+                    >
+                      {!isExecuting && <Play className="w-4 h-4" />}
+                      Run Code
+                    </button>
+                    <button
+                      className={`btn btn-success gap-2 ${isExecuting ? 'loading' : ''}`}
+                      onClick={handleRunCode}
+                      disabled={isExecuting}
+                    >
+                      {!isExecuting && <Play className="w-4 h-4" />}
+                      Submit
+                    </button>
+                  </div>
                 </div>
+
+                {/* Custom Test Cases Panel */}
+                {showCustomTests && (
+                  <div className="mt-4 p-4 bg-base-100 rounded-lg">
+                    <h4 className="font-semibold mb-2">Custom Test Cases</h4>
+                    {customTestCases.map((tc, index) => (
+                      <div key={index} className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          placeholder="Input"
+                          className="input input-bordered input-sm flex-1 font-mono"
+                          value={tc.input}
+                          onChange={(e) => {
+                            const updated = [...customTestCases];
+                            updated[index].input = e.target.value;
+                            setCustomTestCases(updated);
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Expected Output (optional)"
+                          className="input input-bordered input-sm flex-1 font-mono"
+                          value={tc.expectedOutput}
+                          onChange={(e) => {
+                            const updated = [...customTestCases];
+                            updated[index].expectedOutput = e.target.value;
+                            setCustomTestCases(updated);
+                          }}
+                        />
+                        <button
+                          className="btn btn-ghost btn-sm text-error"
+                          onClick={() => {
+                            if (customTestCases.length > 1) {
+                              setCustomTestCases(customTestCases.filter((_, i) => i !== index));
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="btn btn-ghost btn-xs mt-2"
+                      onClick={() => setCustomTestCases([...customTestCases, { input: "", expectedOutput: "" }])}
+                    >
+                      <Plus className="w-3 h-3" /> Add Test Case
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
