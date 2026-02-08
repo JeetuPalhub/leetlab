@@ -1,5 +1,16 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: night, winter;
+}
+
+/* Default to dark theme */
+:root {
+  color-scheme: dark;
+}
+
+[data-theme="winter"] {
+  color-scheme: light;
+}
 
 @keyframes blink {
     0%,
