@@ -69,11 +69,12 @@ docker run --name my-postgres -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypas
 
 | Landing Page | Problem Interface |
 |:---:|:---:|
-| <img src="./screenshots/landing.png" width="400" alt="Landing Page" /> | <img src="./screenshots/problem.png" width="400" alt="Problem UI" /> |
+| <img src="./screenshots/landing.webp" width="400" alt="Landing Page" /> | <img src="./screenshots/problem.webp" width="400" alt="Problem UI" /> |
 
 | AI Roadmap | Profile & Stats |
 |:---:|:---:|
 | <img src="./screenshots/roadmap.png" width="400" alt="Roadmap" /> | <img src="./screenshots/profile.png" width="400" alt="Profile" /> |
+
 
 ---
 
