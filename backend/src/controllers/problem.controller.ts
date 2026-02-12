@@ -6,7 +6,6 @@ import {
     submitBatch,
 } from '../libs/problem.libs.js';
 import { CreateProblemBody, UpdateProblemBody } from '../types/index.js';
-import { Prisma } from '../generated/prisma/index.js';
 
 // Final Create Problem Handler
 export const createProblem = async (req: Request, res: Response): Promise<void> => {
@@ -82,11 +81,11 @@ export const createProblem = async (req: Request, res: Response): Promise<void> 
                 description,
                 difficulty,
                 tags,
-                examples: examples as unknown as Prisma.InputJsonValue,
+                examples: examples as any,
                 constraints,
-                testCases: testCases as unknown as Prisma.InputJsonValue,
-                codeSnippets: codeSnippets as unknown as Prisma.InputJsonValue,
-                referenceSolutions: referenceSolutions as unknown as Prisma.InputJsonValue,
+                testCases: testCases as any,
+                codeSnippets: codeSnippets as any,
+                referenceSolutions: referenceSolutions as any,
                 userId: req.user.id,
             },
         });
@@ -221,11 +220,11 @@ export const updateProblem = async (req: Request, res: Response): Promise<void> 
                 description,
                 difficulty,
                 tags,
-                examples: examples as unknown as Prisma.InputJsonValue,
+                examples: examples as any,
                 constraints,
-                testCases: testCases as unknown as Prisma.InputJsonValue,
-                codeSnippets: codeSnippets as unknown as Prisma.InputJsonValue,
-                referenceSolutions: referenceSolutions as unknown as Prisma.InputJsonValue,
+                testCases: testCases as any,
+                codeSnippets: codeSnippets as any,
+                referenceSolutions: referenceSolutions as any,
             },
         });
 
@@ -251,6 +250,11 @@ export const deleteProblem = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
+        if (req.user?.role !== 'ADMIN') {
+            res.status(403).json({ error: 'Forbidden: Only admin can delete problems' });
+            return;
+        }
+
         await db.problem.delete({ where: { id } });
 
         res.status(200).json({
@@ -273,18 +277,22 @@ export const getAllProblemsSolvedByUser = async (
             return;
         }
 
+        // Allow fetching for other users if ID is provided in query, default to self
+        const queryUserId = req.query.userId as string;
+        const userId = queryUserId || req.user.id;
+
         const problems = await db.problem.findMany({
             where: {
                 solvedBy: {
                     some: {
-                        userId: req.user.id,
+                        userId: userId,
                     },
                 },
             },
             include: {
                 solvedBy: {
                     where: {
-                        userId: req.user.id,
+                        userId: userId,
                     },
                 },
             },

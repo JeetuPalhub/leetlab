@@ -9,8 +9,14 @@ import {
   ChevronDown,
   ChevronUp,
   Code,
+  Activity,
+  Cpu,
+  Layers,
+  ArrowRight
 } from "lucide-react";
 import EmptyState from "./EmptyState";
+import { motion, AnimatePresence } from "framer-motion";
+import { getMonacoLanguage } from "../libs/utils";
 
 const SubmissionsList = ({ submissions, isLoading }) => {
   const [expandedId, setExpandedId] = useState(null);
@@ -18,6 +24,8 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Helper function to safely parse JSON strings
   const safeParse = (data) => {
     try {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
       return JSON.parse(data);
     } catch (error) {
       console.error("Error parsing data:", error);
@@ -28,7 +36,7 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Helper function to calculate average memory usage
   const calculateAverageMemory = (memoryData) => {
     const memoryArray = safeParse(memoryData).map((m) =>
-      parseFloat(m.split(" ")[0])
+      typeof m === 'string' ? parseFloat(m.split(" ")[0]) : m
     );
     if (memoryArray.length === 0) return 0;
     return (
@@ -39,24 +47,12 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Helper function to calculate average runtime
   const calculateAverageTime = (timeData) => {
     const timeArray = safeParse(timeData).map((t) =>
-      parseFloat(t.split(" ")[0])
+      typeof t === 'string' ? parseFloat(t.split(" ")[0]) : t
     );
     if (timeArray.length === 0) return 0;
     return timeArray.reduce((acc, curr) => acc + curr, 0) / timeArray.length;
   };
 
-  // Get language for Monaco editor
-  const getMonacoLanguage = (lang) => {
-    const langMap = {
-      'javascript': 'javascript',
-      'JAVASCRIPT': 'javascript',
-      'python': 'python',
-      'PYTHON': 'python',
-      'java': 'java',
-      'JAVA': 'java',
-    };
-    return langMap[lang] || 'plaintext';
-  };
 
   // Get source code as string
   const getSourceCode = (sourceCode) => {
@@ -74,8 +70,9 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+      <div className="flex flex-col items-center justify-center p-20 gap-4 opacity-50">
+        <span className="loading loading-spinner loading-lg text-blue-500"></span>
+        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Retrieving submission history...</span>
       </div>
     );
   }
@@ -83,99 +80,117 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // No submissions state
   if (!submissions?.length) {
     return (
-      <EmptyState
-        type="submissions"
-        title="No submissions yet"
-        description="Submit your code to see your submission history here."
-      />
+      <div className="text-center p-20 bg-white/5 rounded-[3rem] border-4 border-dashed border-white/5">
+        <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Activity className="w-10 h-10 text-gray-700" />
+        </div>
+        <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">No submissions recorded</p>
+        <p className="text-xs text-gray-600 mt-2">Your journey to mastery starts with your first submit.</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {submissions.map((submission) => {
+    <div className="space-y-3 p-2 bg-[#1a1a1a]">
+      {submissions.map((submission, index) => {
         const avgMemory = calculateAverageMemory(submission.memory);
         const avgTime = calculateAverageTime(submission.time);
         const isExpanded = expandedId === submission.id;
+        const isAccepted = submission.status === "Accepted";
 
         return (
-          <div
+          <motion.div
             key={submission.id}
-            className="card bg-base-200 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className={`group rounded-[1.5rem] overflow-hidden border transition-all ${isExpanded
+              ? "bg-[#252525] border-white/10 shadow-2xl"
+              : "bg-[#1e1e1e] border-white/5 hover:border-white/10"
+              }`}
           >
             <div
-              className="card-body p-4 cursor-pointer"
+              className="p-6 cursor-pointer flex items-center justify-between"
               onClick={() => setExpandedId(isExpanded ? null : submission.id)}
             >
-              <div className="flex items-center justify-between">
-                {/* Left Section: Status and Language */}
-                <div className="flex items-center gap-4">
-                  {submission.status === "Accepted" ? (
-                    <div className="flex items-center gap-2 text-success">
-                      <CheckCircle2 className="w-6 h-6" />
-                      <span className="font-semibold">Accepted</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-error">
-                      <XCircle className="w-6 h-6" />
-                      <span className="font-semibold">{submission.status}</span>
-                    </div>
-                  )}
-                  <div className="badge badge-neutral">{submission.language}</div>
+              <div className="flex items-center gap-6">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isAccepted ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                  }`}>
+                  {isAccepted ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
                 </div>
 
-                {/* Right Section: Runtime, Memory, Date, and Expand */}
-                <div className="flex items-center gap-4 text-base-content/70">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{avgTime.toFixed(3)} s</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h4 className={`font-black text-sm uppercase tracking-wider ${isAccepted ? "text-emerald-500" : "text-red-500"}`}>
+                      {submission.status}
+                    </h4>
+                    <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-md text-gray-400 font-bold uppercase">{submission.language}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Memory className="w-4 h-4" />
-                    <span>{avgMemory.toFixed(0)} KB</span>
+                  <div className="flex items-center gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(submission.createdAt).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {avgTime.toFixed(3)}s</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(submission.createdAt).toLocaleDateString()}
-                    </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="hidden md:flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-[10px] font-black uppercase text-gray-600 tracking-tighter">Memory</div>
+                    <div className="text-xs font-bold text-gray-400">{avgMemory.toFixed(0)} KB</div>
                   </div>
-                  <div className="btn btn-ghost btn-sm btn-circle">
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </div>
+                </div>
+                <div className={`p-2 rounded-xl transition-all ${isExpanded ? "bg-white/10 text-white rotate-180" : "bg-white/5 text-gray-600 group-hover:text-gray-300"}`}>
+                  <ChevronDown className="w-4 h-4" />
                 </div>
               </div>
             </div>
 
-            {/* Expanded Code View */}
-            {isExpanded && (
-              <div className="border-t border-base-300">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Code className="w-5 h-5 text-primary" />
-                    <span className="font-semibold">Your Code</span>
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-white/5 bg-[#1a1a1a]"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500">
+                        <Code className="w-4 h-4 text-blue-500" />
+                        Solution Snapshot
+                      </div>
+                      <div className="text-[10px] text-gray-600 font-bold">STABLE VERSION</div>
+                    </div>
+                    <div className="h-[400px] w-full rounded-2xl overflow-hidden border-4 border-[#282828] shadow-inner bg-[#1e1e1e]">
+                      <Editor
+                        height="100%"
+                        language={getMonacoLanguage(submission.language)}
+                        theme="vs-dark"
+                        value={getSourceCode(submission.sourceCode)}
+                        options={{
+                          readOnly: true,
+                          minimap: { enabled: false },
+                          fontSize: 13,
+                          lineNumbers: 'on',
+                          scrollBeyondLastLine: false,
+                          automaticLayout: true,
+                          wordWrap: 'on',
+                          padding: { top: 20 },
+                          fontFamily: "'Fira Code', 'Cascadia Code', monospace"
+                        }}
+                      />
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                      <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
+                        View Full Analytics <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="h-[300px] w-full rounded-lg overflow-hidden border border-base-300">
-                    <Editor
-                      height="100%"
-                      language={getMonacoLanguage(submission.language)}
-                      theme="vs-dark"
-                      value={getSourceCode(submission.sourceCode)}
-                      options={{
-                        readOnly: true,
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        lineNumbers: 'on',
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        wordWrap: 'on',
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         );
       })}
     </div>

@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { db } from '../libs/db.js';
-import { UserRole } from '../generated/prisma/index.js';
 import { RegisterBody, LoginBody } from '../types/index.js';
 
 // REGISTER
@@ -23,7 +22,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                 email,
                 password: hashedPassword,
                 name,
-                role: UserRole.USER,
+                role: 'USER',
             },
         });
 

@@ -17,7 +17,7 @@ export const useProblemStore = create((set, get) => ({
 
       set({ problems: res.data.problems });
 
-     
+
     } catch (error) {
       console.log("Error getting all problems", error);
       toast.error("Error getting all problems");
@@ -42,14 +42,43 @@ export const useProblemStore = create((set, get) => ({
     }
   },
 
-  getSolvedProblemByUser: async () => {
+  getSolvedProblemByUser: async (userId) => {
     try {
-      const res = await axiosInstance.get("/problems/get-solved-problem");
+      const url = userId ? `/problems/get-solved-problem?userId=${userId}` : "/problems/get-solved-problem";
+      const res = await axiosInstance.get(url);
 
-      set({ solvedProblems: res.data.problems });
-    } catch (error) { 
+      set({ solvedProblems: res.data.problems || [] });
+    } catch (error) {
       console.log("Error getting solved problems", error);
-      toast.error("Error getting solved problems");
+    }
+  },
+  dailyChallenge: null,
+  isChallengeLoading: false,
+
+  getDailyChallenge: async () => {
+    try {
+      set({ isChallengeLoading: true });
+      const res = await axiosInstance.get("/challenges/today");
+      set({ dailyChallenge: res.data.challenge });
+    } catch (error) {
+      console.log("Error getting daily challenge", error);
+    } finally {
+      set({ isChallengeLoading: false });
+    }
+  },
+
+  createProblem: async (problemData) => {
+    try {
+      set({ isProblemLoading: true });
+      const res = await axiosInstance.post("/problems/create-problem", problemData);
+      toast.success(res.data.message || "Problem created successfully");
+      return res.data;
+    } catch (error) {
+      console.log("Error creating problem", error);
+      toast.error(error.response?.data?.message || "Error creating problem");
+      throw error;
+    } finally {
+      set({ isProblemLoading: false });
     }
   },
 

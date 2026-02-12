@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { db } from "../libs/db.js";
-// @ts-ignore
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const generateAIRoadmap = async (req: Request, res: Response) => {
@@ -35,53 +34,62 @@ export const generateAIRoadmap = async (req: Request, res: Response) => {
             return acc;
         }, { EASY: 0, MEDIUM: 0, HARD: 0, tags: {} });
 
-        // 3. Prompt engineering for Gemini
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            generationConfig: { responseMimeType: "application/json" }
-        });
+        const topTags = Object.entries(stats.tags)
+            .sort((a: any, b: any) => b[1] - a[1])
+            .slice(0, 5);
 
-        const prompt = `
-            You are a world-class competitive programming coach. 
-            Analyze this student's performance data and generate a personalized 4-step learning roadmap.
-            
-            Student Stats:
-            - Easy problems solved: ${stats.EASY}
-            - Medium problems solved: ${stats.MEDIUM}
-            - Hard problems solved: ${stats.HARD}
-            - Top Tags: ${JSON.stringify(Object.entries(stats.tags).sort((a: any, b: any) => b[1] - a[1]).slice(0, 5))}
-            
-            Return a JSON object with this structure:
-            {
-                "assessment": "A single sentence summary of current skill level.",
-                "milestones": [
-                    {
-                        "id": 1,
-                        "title": "Phase name",
-                        "description": "Short objective",
-                        "focusTags": ["Tag1", "Tag2"],
-                        "difficultyRecommendation": "EASY/MEDIUM/HARD"
-                    }
-                ],
-                "recommendedCategories": ["Category1", "Category2"]
-            }
-            
-            Be encouraging but realistic. Focus on areas where they have few solutions.
-        `;
+        let roadmapContent: unknown = DUMMY_ROADMAP;
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        const result = await model.generateContent(prompt);
-        const roadmapContent = JSON.parse(result.response.text());
+        if (apiKey) {
+            // 3. Prompt engineering for Gemini
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `
+                You are a world-class competitive programming coach. 
+                Analyze this student's performance data and generate a personalized 4-step learning roadmap.
+                
+                Student Stats:
+                - Easy problems solved: ${stats.EASY}
+                - Medium problems solved: ${stats.MEDIUM}
+                - Hard problems solved: ${stats.HARD}
+                - Top Tags: ${JSON.stringify(topTags)}
+                
+                Return a JSON object with this structure:
+                {
+                    "assessment": "A single sentence summary of current skill level.",
+                    "milestones": [
+                        {
+                            "id": 1,
+                            "title": "Phase name",
+                            "description": "Short objective",
+                            "focusTags": ["Tag1", "Tag2"],
+                            "difficultyRecommendation": "EASY/MEDIUM/HARD"
+                        }
+                    ],
+                    "recommendedCategories": ["Category1", "Category2"]
+                }
+                
+                Be encouraging but realistic. Focus on areas where they have few solutions.
+            `;
+
+            const result = await model.generateContent(prompt);
+            roadmapContent = JSON.parse(result.response.text());
+        }
 
         // 4. Save/Update roadmap in DB
         const roadmap = await db.aIRoadmap.upsert({
             where: { userId },
             create: {
                 userId,
-                content: roadmapContent
+                content: roadmapContent as any
             },
             update: {
-                content: roadmapContent
+                content: roadmapContent as any
             }
         });
 
@@ -156,4 +164,3 @@ export const getAIRoadmap = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Failed to fetch roadmap" });
     }
 };
-

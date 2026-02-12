@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Bookmark, PencilIcon, Trash, TrashIcon, Plus } from "lucide-react";
 import { useActions } from "../store/useActions";
 import AddToPlaylistModal from "./AddToPlaylist";
@@ -13,6 +13,7 @@ const ProblemsTable = ({ problems }) => {
   const { authUser } = useAuthStore();
   const { onDeleteProblem } = useActions();
   const { createPlaylist } = usePlaylistStore();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("ALL");
   const [selectedTag, setSelectedTag] = useState("ALL");
@@ -71,16 +72,27 @@ const ProblemsTable = ({ problems }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto mt-10">
-      {/* Header with Create Playlist Button */}
+      {/* Header with Administrative Buttons */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Problems</h2>
-        <button
-          className="btn btn-primary gap-2"
-          onClick={() => setIsCreateModalOpen(true)}
-        >
-          <Plus className="w-4 h-4" />
-          Create Playlist
-        </button>
+        <div className="flex gap-3">
+          {authUser?.role === "ADMIN" && (
+            <button
+              className="btn btn-secondary gap-2"
+              onClick={() => navigate("/add-problem")}
+            >
+              <Plus className="w-4 h-4" />
+              Create Problem
+            </button>
+          )}
+          <button
+            className="btn btn-primary gap-2"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            Create Playlist
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -166,10 +178,10 @@ const ProblemsTable = ({ problems }) => {
                     <td>
                       <span
                         className={`badge font-semibold text-xs text-white ${problem.difficulty === "EASY"
-                            ? "badge-success"
-                            : problem.difficulty === "MEDIUM"
-                              ? "badge-warning"
-                              : "badge-error"
+                          ? "badge-success"
+                          : problem.difficulty === "MEDIUM"
+                            ? "badge-warning"
+                            : "badge-error"
                           }`}
                       >
                         {problem.difficulty}
@@ -181,13 +193,16 @@ const ProblemsTable = ({ problems }) => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleDelete(problem.id)}
-                              className="btn btn-sm btn-error"
+                              className="btn btn-sm btn-error shadow-sm hover:shadow-md transition-shadow"
                             >
                               <TrashIcon className="w-4 h-4 text-white" />
                             </button>
-                            <button disabled className="btn btn-sm btn-warning">
+                            <Link
+                              to={`/edit-problem/${problem.id}`}
+                              className="btn btn-sm btn-warning shadow-sm hover:shadow-md transition-shadow"
+                            >
                               <PencilIcon className="w-4 h-4 text-white" />
-                            </button>
+                            </Link>
                           </div>
                         )}
                         <button

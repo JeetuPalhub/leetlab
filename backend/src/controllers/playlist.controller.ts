@@ -106,12 +106,12 @@ export const addProblemToPlaylist = async (req: Request, res: Response): Promise
             res.status(400).json({ error: 'Invalid or missing problemIds' });
             return;
         }
-
         const problemsInPlaylist = await db.problemInPlaylist.createMany({
             data: problemIds.map((problemId) => ({
                 playlistId,
                 problemId,
             })),
+            skipDuplicates: true,
         });
 
         res.status(201).json({

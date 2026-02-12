@@ -11,11 +11,15 @@ import {
     BookOpen,
     CheckCircle2,
     Download,
-    AlertCircle,
-    Save
+    FlaskConical,
+    Sparkles,
+    Wand2,
+    Save,
+    ArrowLeft
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useProblemStore } from "../store/useProblemStore";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +32,6 @@ const problemSchema = z.object({
     constraints: z.string().min(1, "Constraints are required"),
     hints: z.string().optional().nullable(),
     editorial: z.string().optional().nullable(),
-    companies: z.array(z.string()).optional(),
     testCases: z
         .array(
             z.object({
@@ -68,315 +71,323 @@ const problemSchema = z.object({
 
 const EditProblemForm = ({ initialData }) => {
     const navigate = useNavigate();
-    const { updateProblem } = useProblemStore();
-    const [isLoading, setIsLoading] = useState(false);
+    const { updateProblem, isProblemLoading: isLoading } = useProblemStore();
+    const [activeTab, setActiveTab] = useState("basics");
 
     const {
         register,
-        control,
         handleSubmit,
+        control,
+        setValue,
         reset,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(problemSchema),
-        defaultValues: {
-            ...initialData,
-            companies: initialData.companies || [""],
-        },
+        defaultValues: initialData,
     });
 
     useEffect(() => {
         if (initialData) {
-            reset({
-                ...initialData,
-                companies: initialData.companies?.length > 0 ? initialData.companies : [""],
-            });
+            reset(initialData);
         }
     }, [initialData, reset]);
 
-    const {
-        fields: testCaseFields,
-        append: appendTestCase,
-        remove: removeTestCase,
-    } = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control,
         name: "testCases",
     });
 
-    const {
-        fields: tagFields,
-        append: appendTag,
-        remove: removeTag,
-    } = useFieldArray({
-        control,
-        name: "tags",
-    });
-
-    const {
-        fields: companyFields,
-        append: appendCompany,
-        remove: removeCompany,
-    } = useFieldArray({
-        control,
-        name: "companies",
-    });
-
     const onSubmit = async (value) => {
         try {
-            setIsLoading(true);
-            // Clean up empty companies if any
-            const cleanedValue = {
-                ...value,
-                companies: value.companies?.filter(c => c.trim() !== "") || []
-            };
-
-            const success = await updateProblem(initialData.id, cleanedValue);
+            const success = await updateProblem(initialData.id, value);
             if (success) {
-                navigate("/");
+                navigate("/problems");
             }
         } catch (error) {
             console.log("Error updating problem", error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
+    const tabs = [
+        { id: "basics", label: "Basics", icon: FileText },
+        { id: "details", label: "Description", icon: BookOpen },
+        { id: "testcases", label: "Test Cases", icon: FlaskConical },
+        { id: "snippets", label: "Code & Samples", icon: Code2 },
+    ];
+
+    const availableTags = ["Array", "String", "Hash Table", "Dynamic Programming", "Math", "Sorting", "Greedy", "DFS", "Binary Search", "Two Pointers", "BFS", "Tree", "Matrix", "Backtracking", "Stack", "Design", "Graph", "Heap"];
+
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
-            <div className="card bg-base-100 shadow-xl border border-white/5">
-                <div className="card-body p-6 md:p-8">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 pb-4 border-b border-white/5">
-                        <h2 className="card-title text-2xl md:text-3xl flex items-center gap-3">
-                            <FileText className="w-6 h-6 md:w-8 md:h-8 text-primary" />
-                            Edit Problem: <span className="text-primary italic">{initialData.title}</span>
-                        </h2>
-                        <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>Cancel</button>
+        <div className="min-h-screen bg-[#f8f9fa] py-12 px-4">
+            <div className="max-w-6xl mx-auto">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 bg-white p-8 rounded-3xl shadow-sm border border-gray-200">
+                    <div>
+                        <div className="flex items-center gap-2 text-blue-600 font-bold mb-2 cursor-pointer hover:translate-x-[-4px] transition-transform" onClick={() => navigate(-1)}>
+                            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+                            <span className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                                <FileText className="w-8 h-8" />
+                            </span>
+                            Edit <span className="text-blue-600">Problem</span>
+                        </h1>
+                        <p className="mt-2 text-gray-500 font-medium">Updating challenge: <span className="text-gray-900 font-bold">{initialData.title}</span></p>
                     </div>
+                </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                        {/* Basic Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="form-control md:col-span-2">
-                                <label className="label">
-                                    <span className="label-text text-base md:text-lg font-semibold">Title</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="input input-bordered w-full"
-                                    {...register("title")}
-                                    placeholder="Enter problem title"
-                                />
-                                {errors.title && (
-                                    <label className="label">
-                                        <span className="label-text-alt text-error">{errors.title.message}</span>
-                                    </label>
-                                )}
-                            </div>
+                {/* Tab Switcher */}
+                <div className="flex items-center gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-xl transition-all font-bold text-sm uppercase tracking-wider whitespace-nowrap ${activeTab === tab.id
+                                    ? "bg-gray-900 text-white shadow-xl"
+                                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                                }`}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
 
-                            <div className="form-control md:col-span-2">
-                                <label className="label">
-                                    <span className="label-text text-base md:text-lg font-semibold">Description</span>
-                                </label>
-                                <textarea
-                                    className="textarea textarea-bordered min-h-32 w-full p-4 resize-y"
-                                    {...register("description")}
-                                    placeholder="Enter problem description"
-                                />
-                                {errors.description && (
-                                    <label className="label">
-                                        <span className="label-text-alt text-error">{errors.description.message}</span>
-                                    </label>
-                                )}
-                            </div>
+                {/* Form Body */}
+                <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-200 overflow-hidden min-h-[600px] flex flex-col">
+                    <form onSubmit={handleSubmit(onSubmit)} className="p-8 md:p-12 flex-1">
 
-                            <div className="form-control">
-                                <label className="label">
-                                    <span className="label-text text-base md:text-lg font-semibold">Difficulty</span>
-                                </label>
-                                <select className="select select-bordered w-full" {...register("difficulty")}>
-                                    <option value="EASY">Easy</option>
-                                    <option value="MEDIUM">Medium</option>
-                                    <option value="HARD">Hard</option>
-                                </select>
-                            </div>
-                        </div>
+                        {activeTab === "basics" && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black uppercase tracking-widest text-gray-400">Problem Title</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-5 text-lg font-bold transition-all outline-none"
+                                            {...register("title")}
+                                            placeholder="e.g. Valid Anagram"
+                                        />
+                                        {errors.title && <p className="text-red-500 text-xs font-bold uppercase ml-2">{errors.title.message}</p>}
+                                    </div>
 
-                        {/* Tags & Companies */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Tags */}
-                            <div className="card bg-base-200 p-6 border border-white/5 shadow-inner">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <BookOpen className="w-5 h-5 text-primary" /> Tags
-                                    </h3>
-                                    <button type="button" className="btn btn-primary btn-sm rounded-xl" onClick={() => appendTag("")}>
-                                        <Plus className="w-4 h-4" />
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black uppercase tracking-widest text-gray-400">Difficulty Level</label>
+                                        <select
+                                            className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-5 text-lg font-bold transition-all outline-none appearance-none cursor-pointer"
+                                            {...register("difficulty")}
+                                        >
+                                            <option value="EASY">🟢 Easy</option>
+                                            <option value="MEDIUM">🟡 Medium</option>
+                                            <option value="HARD">🔴 Hard</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400">Topic Tags</label>
+                                    <Controller
+                                        name="tags"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <div className="flex flex-wrap gap-2 p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                                {availableTags.map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newValue = Array.isArray(field.value)
+                                                                ? (field.value.includes(tag) ? field.value.filter(t => t !== tag) : [...field.value, tag])
+                                                                : [tag];
+                                                            field.onChange(newValue);
+                                                        }}
+                                                        className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border-2 ${Array.isArray(field.value) && field.value.includes(tag)
+                                                                ? "bg-gray-900 border-gray-900 text-white shadow-lg"
+                                                                : "bg-white border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600"
+                                                            }`}
+                                                    >
+                                                        {tag}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    />
+                                    {errors.tags && <p className="text-red-500 text-xs font-bold uppercase ml-2">{errors.tags.message}</p>}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === "details" && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                                <div className="space-y-3">
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400">Problem Description (supports Markdown)</label>
+                                    <textarea
+                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl px-8 py-8 min-h-[300px] text-lg leading-relaxed transition-all outline-none resize-none"
+                                        {...register("description")}
+                                        placeholder="Provide a clear and concise problem statement..."
+                                    />
+                                    {errors.description && <p className="text-red-500 text-xs font-bold uppercase ml-2">{errors.description.message}</p>}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black uppercase tracking-widest text-gray-400">Constraints</label>
+                                        <textarea
+                                            className="w-full bg-gray-900 text-blue-300 font-mono rounded-2xl px-6 py-6 min-h-[160px] outline-none border-4 border-gray-800 focus:border-blue-500 transition-all"
+                                            {...register("constraints")}
+                                            placeholder="e.g. 1 <= n <= 1000"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black uppercase tracking-widest text-gray-400">Implementation Hints</label>
+                                        <textarea
+                                            className="w-full bg-amber-50 text-amber-900 border-2 border-amber-100 rounded-2xl px-6 py-6 min-h-[160px] outline-none focus:border-amber-400 transition-all"
+                                            {...register("hints")}
+                                            placeholder="Give users a nudge in the right direction..."
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === "testcases" && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-6">
+                                    <h3 className="text-lg font-black uppercase text-gray-400 tracking-tighter">Validation Test Suite</h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => append({ input: "", output: "" })}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-200"
+                                    >
+                                        <Plus className="w-5 h-5" /> Add Case
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {tagFields.map((field, index) => (
-                                        <div key={field.id} className="flex gap-2">
-                                            <input type="text" className="input input-bordered input-sm flex-1" {...register(`tags.${index}`)} />
-                                            <button type="button" className="btn btn-ghost btn-circle btn-sm" onClick={() => removeTag(index)}>
-                                                <Trash2 className="w-4 h-4 text-error" />
+
+                                <div className="space-y-6">
+                                    {fields.map((item, index) => (
+                                        <div key={item.id} className="group relative bg-gray-50 p-8 rounded-[2rem] border-2 border-transparent hover:border-blue-100 transition-all">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Input Data</span>
+                                                    <textarea className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-mono text-sm min-h-[120px] outline-none focus:border-blue-400 transition-all" {...register(`testCases.${index}.input`)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-2">Expected Output</span>
+                                                    <textarea className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-mono text-sm min-h-[120px] outline-none focus:border-blue-400 transition-all" {...register(`testCases.${index}.output`)} />
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => remove(index)}
+                                                className="absolute -top-3 -right-3 bg-red-500 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:scale-110 active:scale-95"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
                                             </button>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
+                        )}
 
-                            {/* Companies */}
-                            <div className="card bg-base-200 p-6 border border-white/5 shadow-inner">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        <Building2 className="w-5 h-5 text-secondary" /> Companies
-                                    </h3>
-                                    <button type="button" className="btn btn-secondary btn-sm rounded-xl" onClick={() => appendCompany("")}>
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {companyFields.map((field, index) => (
-                                        <div key={field.id} className="flex gap-2">
-                                            <input type="text" className="input input-bordered input-sm flex-1" {...register(`companies.${index}`)} />
-                                            <button type="button" className="btn btn-ghost btn-circle btn-sm" onClick={() => removeCompany(index)}>
-                                                <Trash2 className="w-4 h-4 text-error" />
-                                            </button>
+                        {activeTab === "snippets" && (
+                            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-16">
+                                {["JAVASCRIPT", "PYTHON", "JAVA"].map((language) => (
+                                    <div key={language} className="space-y-8 bg-gray-50 p-10 rounded-[2.5rem] border border-gray-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 flex items-center justify-center bg-gray-900 rounded-2xl text-white">
+                                                <Code2 className="w-6 h-6" />
+                                            </div>
+                                            <h3 className="text-2xl font-black">{language} Configurations</h3>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Test Cases */}
-                        <div className="card bg-base-200 p-6 border border-white/5 shadow-inner">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold flex items-center gap-2">
-                                    <CheckCircle2 className="w-5 h-5 text-success" /> Test Cases
-                                </h3>
-                                <button type="button" className="btn btn-success btn-sm rounded-xl text-white" onClick={() => appendTestCase({ input: "", output: "" })}>
-                                    <Plus className="w-4 h-4" /> Add Test Case
-                                </button>
-                            </div>
-                            <div className="space-y-4">
-                                {testCaseFields.map((field, index) => (
-                                    <div key={field.id} className="bg-base-100 p-4 rounded-xl shadow-sm border border-white/5 flex flex-col md:flex-row gap-4">
-                                        <div className="flex-1">
-                                            <label className="label p-1 text-[10px] uppercase font-bold opacity-50">Input</label>
-                                            <textarea className="textarea textarea-bordered w-full h-20 font-mono text-sm" {...register(`testCases.${index}.input`)} />
+                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-black uppercase text-gray-400 ml-2">Starter Code</h4>
+                                                <div className="rounded-[1.5rem] overflow-hidden bg-[#1e1e1e] border-8 border-[#333] h-[350px] shadow-2xl">
+                                                    <Controller
+                                                        name={`codeSnippets.${language}`}
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Editor
+                                                                height="100%"
+                                                                language={language.toLowerCase()}
+                                                                theme="vs-dark"
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                options={{ minimap: { enabled: false }, fontSize: 13, automaticLayout: true, padding: { top: 20 } }}
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-black uppercase text-gray-400 ml-2">Reference Solution</h4>
+                                                <div className="rounded-[1.5rem] overflow-hidden bg-[#1e1e1e] border-8 border-[#333] h-[350px] shadow-2xl">
+                                                    <Controller
+                                                        name={`referenceSolutions.${language}`}
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Editor
+                                                                height="100%"
+                                                                language={language.toLowerCase()}
+                                                                theme="vs-dark"
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                options={{ minimap: { enabled: false }, fontSize: 13, automaticLayout: true, padding: { top: 20 } }}
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <label className="label p-1 text-[10px] uppercase font-bold opacity-50">Output</label>
-                                            <textarea className="textarea textarea-bordered w-full h-20 font-mono text-sm" {...register(`testCases.${index}.output`)} />
+
+                                        <div className="pt-10 border-t border-gray-200 space-y-6">
+                                            <h4 className="text-xs font-black uppercase text-gray-400 ml-2">UI Display Example</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 ml-4">INPUT</label>
+                                                    <textarea className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 font-mono text-sm h-32 outline-none focus:border-blue-400 transition-all" {...register(`examples.${language}.input`)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 ml-4">OUTPUT</label>
+                                                    <textarea className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 font-mono text-sm h-32 outline-none focus:border-blue-400 transition-all" {...register(`examples.${language}.output`)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-gray-400 ml-4">EXPLANATION</label>
+                                                    <textarea className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-sm h-32 outline-none focus:border-blue-400 transition-all" {...register(`examples.${language}.explanation`)} />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button type="button" className="btn btn-ghost btn-circle self-center" onClick={() => removeTestCase(index)} disabled={testCaseFields.length === 1}>
-                                            <Trash2 className="w-4 h-4 text-error" />
-                                        </button>
                                     </div>
                                 ))}
+                            </motion.div>
+                        )}
+
+                        {/* Bottom Push Navigation */}
+                        <div className="mt-16 pt-12 border-t border-gray-100 flex items-center justify-between gap-8">
+                            <div className="flex-1 flex items-center gap-6 text-gray-300">
+                                <div className="h-0.5 flex-1 bg-gray-100"></div>
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] whitespace-nowrap">Enterprise Validator</span>
+                                <div className="h-0.5 flex-1 bg-gray-100"></div>
                             </div>
-                        </div>
 
-                        {/* Language Sections */}
-                        <div className="space-y-8">
-                            {["JAVASCRIPT", "PYTHON", "JAVA"].map(lang => (
-                                <div key={lang} className="collapse collapse-arrow bg-base-200 border border-white/5">
-                                    <input type="checkbox" defaultChecked={lang === "JAVASCRIPT"} />
-                                    <div className="collapse-title text-xl font-bold flex items-center gap-3">
-                                        <Code2 className="w-6 h-6 text-primary" /> {lang} Configuration
-                                    </div>
-                                    <div className="collapse-content space-y-6">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <div>
-                                                <h4 className="font-bold text-sm uppercase opacity-50 mb-2">Starter Code</h4>
-                                                <div className="border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-                                                    <Controller
-                                                        name={`codeSnippets.${lang}`}
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Editor
-                                                                height="250px"
-                                                                language={lang.toLowerCase()}
-                                                                theme="vs-dark"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                options={{ minimap: { enabled: false }, fontSize: 13 }}
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-sm uppercase opacity-50 mb-2">Reference Solution (Validation)</h4>
-                                                <div className="border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-                                                    <Controller
-                                                        name={`referenceSolutions.${lang}`}
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Editor
-                                                                height="250px"
-                                                                language={lang.toLowerCase()}
-                                                                theme="vs-dark"
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                options={{ minimap: { enabled: false }, fontSize: 13 }}
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="card bg-base-100 p-4 border border-white/5">
-                                            <h4 className="font-bold text-sm uppercase opacity-50 mb-4">Example Display</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="form-control">
-                                                    <label className="label-text font-semibold mb-2 ml-1">Example Input</label>
-                                                    <textarea className="textarea textarea-bordered h-20" {...register(`examples.${lang}.input`)} />
-                                                </div>
-                                                <div className="form-control">
-                                                    <label className="label-text font-semibold mb-2 ml-1">Example Output</label>
-                                                    <textarea className="textarea textarea-bordered h-20" {...register(`examples.${lang}.output`)} />
-                                                </div>
-                                                <div className="form-control">
-                                                    <label className="label-text font-semibold mb-2 ml-1">Explanation</label>
-                                                    <textarea className="textarea textarea-bordered h-20" {...register(`examples.${lang}.explanation`)} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Additional Metadata */}
-                        <div className="card bg-base-200 p-6 border border-white/5 shadow-inner">
-                            <h3 className="text-xl font-bold flex items-center gap-2 mb-6 text-warning">
-                                <Lightbulb className="w-5 h-5" /> Advanced Metadata
-                            </h3>
-                            <div className="grid grid-cols-1 gap-6">
-                                <div className="form-control">
-                                    <label className="label font-bold text-sm opacity-50">CONSTRAINTS</label>
-                                    <textarea className="textarea textarea-bordered h-24 p-4" {...register("constraints")} />
-                                </div>
-                                <div className="form-control">
-                                    <label className="label font-bold text-sm opacity-50">HINTS (AI COMPATIBLE)</label>
-                                    <textarea className="textarea textarea-bordered h-24 p-4" {...register("hints")} />
-                                </div>
-                                <div className="form-control">
-                                    <label className="label font-bold text-sm opacity-50">PLATFORM EDITORIAL</label>
-                                    <textarea className="textarea textarea-bordered h-24 p-4" {...register("editorial")} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-4 pt-8 border-t border-white/5">
-                            <button type="button" className="btn btn-ghost px-8" onClick={() => navigate(-1)}>Cancel</button>
-                            <button type="submit" className="btn btn-primary btn-lg gap-2 px-12 rounded-2xl shadow-xl shadow-primary/20" disabled={isLoading}>
+                            <button
+                                type="submit"
+                                className="relative bg-blue-600 hover:bg-blue-700 text-white h-24 px-16 rounded-[2rem] font-black text-2xl flex items-center gap-4 transition-all hover:shadow-[0_20px_40px_rgba(37,99,235,0.3)] hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                disabled={isLoading}
+                            >
                                 {isLoading ? (
-                                    <span className="loading loading-spinner"></span>
+                                    <>
+                                        <span className="loading loading-spinner loading-lg"></span>
+                                        <span>Saving...</span>
+                                    </>
                                 ) : (
-                                    <><Save className="w-5 h-5" /> Update Problem</>
+                                    <>
+                                        <span>Save Changes</span>
+                                        <Save className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                                    </>
                                 )}
                             </button>
                         </div>
@@ -386,8 +397,5 @@ const EditProblemForm = ({ initialData }) => {
         </div>
     );
 };
-
-// Add missing lucide-react import Building2
-import { Building2 } from "lucide-react";
 
 export default EditProblemForm;

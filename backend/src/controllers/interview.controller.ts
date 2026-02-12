@@ -121,13 +121,51 @@ export const submitInterview = async (req: any, res: Response) => {
             return p;
         }));
 
-        // Simple AI Feedback Generation (Mocked for now)
-        const feedback = {
+        // Generate Dynamic AI Feedback
+        let feedback = {
             summary: `You solved ${solvedCount} out of 3 problems.`,
             strengths: solvedCount > 0 ? ["Good problem solving", "Technical accuracy"] : [],
             improvements: solvedCount < 3 ? ["Time management", "Edge case handling"] : ["Optimizing space complexity"],
             recommendation: solvedCount === 3 ? "Ready for top-tier interviews!" : "Practice more Medium level strings."
         };
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey) {
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-1.5-flash",
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+
+                const prompt = `
+                    You are a senior technical interviewer at a top-tier tech company.
+                    A candidate has just finished a mock interview session.
+                    
+                    Stats:
+                    - Problems Attempted: 3
+                    - Problems Solved: ${solvedCount}
+                    - Final Score: ${score}
+                    - Problem Details: ${JSON.stringify(updatedProblems)}
+                    
+                    Analyze their performance and provide structured feedback.
+                    Be professional, constructive, and encouraging.
+                    
+                    Return a JSON object with this structure:
+                    {
+                        "summary": "One or two sentences summarizing their overall performance.",
+                        "strengths": ["Strength 1", "Strength 2"],
+                        "improvements": ["Area for improvement 1", "Area for improvement 2"],
+                        "recommendation": "A specific next step or recommendation."
+                    }
+                `;
+
+                const result = await model.generateContent(prompt);
+                feedback = JSON.parse(result.response.text());
+            } catch (err) {
+                console.error("AI Feedback Generation Error:", err);
+            }
+        }
 
         const updatedSession = await db.interviewSession.update({
             where: { id },
@@ -136,7 +174,7 @@ export const submitInterview = async (req: any, res: Response) => {
                 status: "COMPLETED",
                 endTime: new Date(),
                 score,
-                feedback
+                feedback: feedback as any
             }
         });
 

@@ -1,43 +1,73 @@
 import { Request, Response } from 'express';
 import { db } from '../libs/db.js';
 
-// GET TOP USERS BY POINTS
-export const getLeaderboard = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const topUsers = await db.user.findMany({
-            select: {
-                id: true,
-                name: true,
-                image: true,
-                points: true,
-                _count: {
-                    select: {
-                        solvedProblems: true,
-                        submissions: true,
-                    },
+type LeaderboardEntry = {
+    rank: number;
+    id: string;
+    name: string | null;
+    image: string | null;
+    points: number;
+    problemsSolved: number;
+    submissionCount: number;
+    successRate: number;
+};
+
+const buildLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+    const users = await db.user.findMany({
+        select: {
+            id: true,
+            name: true,
+            image: true,
+            _count: {
+                select: {
+                    solvedProblems: true,
+                    submissions: true,
                 },
             },
-            orderBy: [
-                { points: 'desc' },
-                { solvedProblems: { _count: 'desc' } }
-            ],
-            take: 50, // Top 50 users
-        });
+        },
+    });
 
-        // Format the output
-        const leaderboard = topUsers.map((user, index) => ({
+    const rows = users
+        .map((user) => {
+            const problemsSolved = user._count.solvedProblems;
+            const submissionCount = user._count.submissions;
+            const points = problemsSolved * 100;
+            const successRate =
+                submissionCount > 0
+                    ? Math.round((problemsSolved / submissionCount) * 100)
+                    : 0;
+
+            return {
+                id: user.id,
+                name: user.name,
+                image: user.image,
+                points,
+                problemsSolved,
+                submissionCount,
+                successRate,
+            };
+        })
+        .sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            if (b.problemsSolved !== a.problemsSolved) return b.problemsSolved - a.problemsSolved;
+            return a.submissionCount - b.submissionCount;
+        })
+        .map((user, index) => ({
             rank: index + 1,
-            id: user.id,
-            name: user.name,
-            image: user.image,
-            points: user.points,
-            solvedCount: user._count.solvedProblems,
-            submissionCount: user._count.submissions,
+            ...user,
         }));
+
+    return rows;
+};
+
+// GET TOP USERS BY COMPUTED POINTS
+export const getLeaderboard = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const leaderboard = await buildLeaderboard();
 
         res.status(200).json({
             success: true,
-            leaderboard,
+            leaderboard: leaderboard.slice(0, 50),
         });
     } catch (error) {
         console.error('Get Leaderboard Error:', error);
@@ -54,27 +84,20 @@ export const getMyRank = async (req: Request, res: Response): Promise<void> => {
         }
 
         const userId = req.user.id;
-        const user = await db.user.findUnique({
-            where: { id: userId },
-            select: { points: true }
-        });
-
-        if (!user) {
+        const leaderboard = await buildLeaderboard();
+        const me = leaderboard.find((entry) => entry.id === userId);
+        if (!me) {
             res.status(404).json({ error: 'User not found' });
             return;
         }
 
-        // Count users with more points
-        const higherPointUsers = await db.user.count({
-            where: {
-                points: { gt: user.points }
-            }
-        });
-
         res.status(200).json({
             success: true,
-            rank: higherPointUsers + 1,
-            points: user.points
+            id: me.id,
+            rank: me.rank,
+            points: me.points,
+            problemsSolved: me.problemsSolved,
+            successRate: me.successRate,
         });
     } catch (error) {
         console.error('Get My Rank Error:', error);

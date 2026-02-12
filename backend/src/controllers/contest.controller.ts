@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { db } from '../libs/db.js';
 
+const getParamAsString = (value: string | string[] | undefined): string | null => {
+    return typeof value === 'string' && value.trim() ? value : null;
+};
+
 export const createContest = async (req: Request, res: Response) => {
     try {
         const { title, description, startTime, endTime, problems } = req.body;
@@ -10,12 +14,28 @@ export const createContest = async (req: Request, res: Response) => {
             return;
         }
 
+        if (!title || !startTime || !endTime || !Array.isArray(problems) || problems.length === 0) {
+            res.status(400).json({ error: 'Missing required contest fields' });
+            return;
+        }
+
+        const uniqueProblemIds = Array.from(new Set(problems.map((p: any) => p.problemId)));
+        const existingProblems = await db.problem.findMany({
+            where: { id: { in: uniqueProblemIds } },
+            select: { id: true },
+        });
+        if (existingProblems.length !== uniqueProblemIds.length) {
+            res.status(400).json({ error: 'One or more problem ids are invalid' });
+            return;
+        }
+
         const contest = await db.contest.create({
             data: {
                 title,
                 description,
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
+                createdById: req.user.id,
                 problems: {
                     create: problems.map((p: any, index: number) => ({
                         problemId: p.problemId,
@@ -61,7 +81,11 @@ export const getContests = async (req: Request, res: Response) => {
 
 export const getContestById = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = getParamAsString(req.params.id);
+        if (!id) {
+            res.status(400).json({ error: 'Invalid contest id' });
+            return;
+        }
 
         const contest = await db.contest.findUnique({
             where: { id },
@@ -117,7 +141,11 @@ export const getContestById = async (req: Request, res: Response) => {
 
 export const registerForContest = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = getParamAsString(req.params.id);
+        if (!id) {
+            res.status(400).json({ error: 'Invalid contest id' });
+            return;
+        }
         const userId = req.user?.id;
 
         if (!userId) {
@@ -159,72 +187,96 @@ export const registerForContest = async (req: Request, res: Response) => {
 
 export const getContestLeaderboard = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = getParamAsString(req.params.id);
+        if (!id) {
+            res.status(400).json({ error: 'Invalid contest id' });
+            return;
+        }
+        const contest = await db.contest.findUnique({
+            where: { id },
+            include: {
+                problems: true,
+                registrations: {
+                    include: {
+                        user: {
+                            select: { id: true, name: true, image: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!contest) {
+            res.status(404).json({ error: 'Contest not found' });
+            return;
+        }
+
+        const problemIds = contest.problems.map((p) => p.problemId);
+        const registeredUserIds = contest.registrations.map((r) => r.userId);
+
+        if (problemIds.length === 0 || registeredUserIds.length === 0) {
+            res.json([]);
+            return;
+        }
 
         const submissions = await db.submission.findMany({
             where: {
-                contestId: id,
-                status: 'Accepted'
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        image: true
-                    }
+                status: 'Accepted',
+                problemId: { in: problemIds },
+                userId: { in: registeredUserIds },
+                createdAt: {
+                    gte: contest.startTime,
+                    lte: contest.endTime,
                 },
-                problem: {
-                    select: {
-                        id: true
-                    }
-                }
-            }
+            },
+            select: {
+                userId: true,
+                problemId: true,
+                createdAt: true,
+            },
+            orderBy: { createdAt: 'asc' },
         });
 
-        const contestProblems = await db.contestProblem.findMany({
-            where: { contestId: id }
-        });
-
-        const problemPoints = contestProblems.reduce((acc: any, cp: any) => {
+        const problemPoints = contest.problems.reduce<Record<string, number>>((acc, cp) => {
             acc[cp.problemId] = cp.points;
             return acc;
         }, {});
 
-        // Calculate scores
-        const leaderboardMap: any = {};
+        const leaderboardMap = new Map<string, {
+            user: { id: string; name: string | null; image: string | null };
+            totalScore: number;
+            solvedProblems: Set<string>;
+            lastSubmissionTime: Date;
+        }>();
+
+        contest.registrations.forEach((registration) => {
+            leaderboardMap.set(registration.userId, {
+                user: registration.user,
+                totalScore: 0,
+                solvedProblems: new Set<string>(),
+                lastSubmissionTime: contest.endTime,
+            });
+        });
 
         submissions.forEach((sub) => {
-            const userId = sub.userId;
-            if (!leaderboardMap[userId]) {
-                leaderboardMap[userId] = {
-                    user: sub.user,
-                    totalScore: 0,
-                    solvedProblems: new Set(),
-                    lastSubmissionTime: sub.createdAt
-                };
-            }
+            const entry = leaderboardMap.get(sub.userId);
+            if (!entry) return;
 
-            if (!leaderboardMap[userId].solvedProblems.has(sub.problemId)) {
-                leaderboardMap[userId].totalScore += problemPoints[sub.problemId] || 0;
-                leaderboardMap[userId].solvedProblems.add(sub.problemId);
-
-                if (new Date(sub.createdAt) > new Date(leaderboardMap[userId].lastSubmissionTime)) {
-                    leaderboardMap[userId].lastSubmissionTime = sub.createdAt;
-                }
+            if (!entry.solvedProblems.has(sub.problemId)) {
+                entry.solvedProblems.add(sub.problemId);
+                entry.totalScore += problemPoints[sub.problemId] || 0;
+                entry.lastSubmissionTime = sub.createdAt;
             }
         });
 
-        const leaderboard = Object.values(leaderboardMap)
-            .map((entry: any) => ({
+        const leaderboard = Array.from(leaderboardMap.values())
+            .map((entry) => ({
                 ...entry,
                 solvedCount: entry.solvedProblems.size,
-                solvedProblems: Array.from(entry.solvedProblems)
+                solvedProblems: Array.from(entry.solvedProblems),
             }))
-            .sort((a: any, b: any) => {
-                if (b.totalScore !== a.totalScore) {
-                    return b.totalScore - a.totalScore;
-                }
+            .sort((a, b) => {
+                if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
                 return new Date(a.lastSubmissionTime).getTime() - new Date(b.lastSubmissionTime).getTime();
             });
 

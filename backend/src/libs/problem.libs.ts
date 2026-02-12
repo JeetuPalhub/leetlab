@@ -4,22 +4,33 @@ import { Judge0Submission, Judge0Result } from '../types/index.js';
 const JUDGE0_API_URL = process.env.JUDGE0_API_URL;
 
 const languageMap: Record<string, number> = {
-    PYTHON: 71,
-    JAVASCRIPT: 63,
-    JAVA: 62,
+    C: 50,
+    'C++': 54,
     CPP: 54,
     GO: 60,
+    JAVA: 62,
+    JAVASCRIPT: 63,
+    JS: 63,
+    PYTHON: 71,
+    RUST: 73,
+    TYPESCRIPT: 74,
+    TS: 74,
 };
 
 const LANGUAGE_NAMES: Record<number, string> = {
-    74: 'TypeScript',
+    50: 'C',
+    54: 'C++',
+    60: 'Go',
+    62: 'Java',
     63: 'JavaScript',
     71: 'Python',
-    62: 'Java',
+    73: 'Rust',
+    74: 'TypeScript',
 };
 
 export function getJudge0LanguageId(language: string): number | undefined {
-    return languageMap[language.toUpperCase()];
+    const normalized = String(language || '').trim().toUpperCase();
+    return languageMap[normalized];
 }
 
 export function getLanguageName(languageId: number): string {

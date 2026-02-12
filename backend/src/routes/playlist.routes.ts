@@ -21,6 +21,6 @@ router.post('/:playlistId/add-problem', authenticate, addProblemToPlaylist);
 
 router.delete('/:playlistId', authenticate, deletePlayList);
 
-router.delete('/:playlistId/remove-problem', authenticate, removeProblemFromPlaylist);
+router.post('/:playlistId/remove-problems', authenticate, removeProblemFromPlaylist);
 
 export default router;

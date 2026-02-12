@@ -13,6 +13,9 @@ export const useRoadmapStore = create((set) => ({
             set({ roadmap: res.data.roadmap });
         } catch (error) {
             console.error('Fetch Roadmap Error:', error);
+            if (error?.response?.status === 501) {
+                toast.error('AI roadmap is not enabled on backend yet');
+            }
         } finally {
             set({ loading: false });
         }
@@ -26,10 +29,13 @@ export const useRoadmapStore = create((set) => ({
             toast.success('AI Roadmap generated successfully!');
         } catch (error) {
             console.error('Generate Roadmap Error:', error);
-            toast.error('Failed to generate roadmap');
+            if (error?.response?.status === 501) {
+                toast.error('AI roadmap is not enabled on backend yet');
+            } else {
+                toast.error('Failed to generate roadmap');
+            }
         } finally {
             set({ loading: false });
         }
     }
 }));
-

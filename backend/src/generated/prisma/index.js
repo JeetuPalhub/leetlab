@@ -253,7 +253,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\jeetu Pal cr\\Downloads\\chai-or-leetcode-main\\chai-or-leetcode-main\\backend\\src\\generated\\prisma",
+      "value": "C:\\Users\\jeetu Pal cr\\Desktop\\leetlab-main\\backend\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -267,7 +267,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\jeetu Pal cr\\Downloads\\chai-or-leetcode-main\\chai-or-leetcode-main\\backend\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\jeetu Pal cr\\Desktop\\leetlab-main\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -281,12 +281,11 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
         "fromEnvVar": "DATABASE_URL",
-        "value": null
+        "value": "postgresql://neondb_owner:npg_wqbL51YaQgXt@ep-sweet-water-ai3qzvgp-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require"
       }
     }
   },

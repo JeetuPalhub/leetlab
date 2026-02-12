@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { db } from '../libs/db.js';
 
+const getParamAsString = (value: string | string[] | undefined): string | null => {
+    return typeof value === 'string' && value.trim() ? value : null;
+};
+
 // LIKE A PROBLEM
 export const likeProblem = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -9,7 +13,11 @@ export const likeProblem = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        const { problemId } = req.params;
+        const problemId = getParamAsString(req.params.problemId);
+        if (!problemId) {
+            res.status(400).json({ error: 'Invalid problem id' });
+            return;
+        }
         const userId = req.user.id;
 
         // Check if problem exists
@@ -54,7 +62,11 @@ export const unlikeProblem = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        const { problemId } = req.params;
+        const problemId = getParamAsString(req.params.problemId);
+        if (!problemId) {
+            res.status(400).json({ error: 'Invalid problem id' });
+            return;
+        }
         const userId = req.user.id;
 
         const existingLike = await db.problemLike.findUnique({
@@ -91,7 +103,11 @@ export const bookmarkProblem = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const { problemId } = req.params;
+        const problemId = getParamAsString(req.params.problemId);
+        if (!problemId) {
+            res.status(400).json({ error: 'Invalid problem id' });
+            return;
+        }
         const { note } = req.body;
         const userId = req.user.id;
 
@@ -137,7 +153,11 @@ export const removeBookmark = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const { problemId } = req.params;
+        const problemId = getParamAsString(req.params.problemId);
+        if (!problemId) {
+            res.status(400).json({ error: 'Invalid problem id' });
+            return;
+        }
         const userId = req.user.id;
 
         const existingBookmark = await db.problemBookmark.findUnique({
@@ -227,7 +247,11 @@ export const getProblemInteractionStatus = async (req: Request, res: Response): 
             return;
         }
 
-        const { problemId } = req.params;
+        const problemId = getParamAsString(req.params.problemId);
+        if (!problemId) {
+            res.status(400).json({ error: 'Invalid problem id' });
+            return;
+        }
         const userId = req.user.id;
 
         const [isLiked, isBookmarked, likeCount] = await Promise.all([

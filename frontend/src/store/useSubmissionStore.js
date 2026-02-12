@@ -8,17 +8,18 @@ export const useSubmissionStore = create((set, get) => ({
   submission: null,
   submissionCount: null,
 
-  getAllSubmissions: async () => {
+  getAllSubmissions: async (userId) => {
     try {
       set({ isLoading: true });
-      const res = await axiosInstance.get("/submissions/get-all-submissions");
+      const url = userId
+        ? `/submissions/get-all-submissions?userId=${userId}`
+        : "/submissions/get-all-submissions";
+      const res = await axiosInstance.get(url);
 
       set({ submissions: res.data.submissions });
 
-      toast.success(res.data.message);
     } catch (error) {
       console.log("Error getting all submissions", error);
-      toast.error("Error getting all submissions");
     } finally {
       set({ isLoading: false });
     }
@@ -32,13 +33,13 @@ export const useSubmissionStore = create((set, get) => ({
 
       set({ submission: res.data.submissions });
 
-      
+
 
     } catch (error) {
       console.log("Error getting submissions for problem", error);
 
       toast.error("Error getting submissions for problem");
-      
+
     } finally {
       set({ isLoading: false });
     }
@@ -48,12 +49,27 @@ export const useSubmissionStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get(
         `/submissions/get-submissions-count/${problemId}`
-      );                
+      );
 
       set({ submissionCount: res.data.count });
     } catch (error) {
       console.log("Error getting submission count for problem", error);
       toast.error("Error getting submission count for problem");
+    }
+  },
+
+  getSubmissionDetails: async (submissionId) => {
+    try {
+      set({ isLoading: true });
+      const res = await axiosInstance.get(
+        `/submissions/get-submission-details/${submissionId}`
+      );
+      set({ submission: res.data.submission });
+    } catch (error) {
+      console.log("Error getting submission details", error);
+      toast.error("Error getting submission details");
+    } finally {
+      set({ isLoading: false });
     }
   },
 }));

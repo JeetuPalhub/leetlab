@@ -14,7 +14,11 @@ export const useLeaderboardStore = create((set) => ({
             set({ leaderboard: res.data.leaderboard });
         } catch (error) {
             console.error("Error fetching leaderboard:", error);
-            toast.error("Failed to load leaderboard");
+            if (error?.response?.status === 501) {
+                toast.error("Leaderboard is not enabled on backend yet");
+            } else {
+                toast.error("Failed to load leaderboard");
+            }
         } finally {
             set({ isLoading: false });
         }
@@ -26,6 +30,9 @@ export const useLeaderboardStore = create((set) => ({
             set({ myRank: res.data });
         } catch (error) {
             console.error("Error fetching my rank:", error);
+            if (error?.response?.status === 501) {
+                toast.error("Leaderboard is not enabled on backend yet");
+            }
         }
     },
 }));

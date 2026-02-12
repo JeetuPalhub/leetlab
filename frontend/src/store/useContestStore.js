@@ -15,7 +15,11 @@ export const useContestStore = create((set, get) => ({
             set({ contests: res.data });
         } catch (error) {
             console.error('Fetch Contests Error:', error);
-            toast.error('Failed to load contests');
+            if (error?.response?.status === 501) {
+                toast.error('Contests are not enabled on backend yet');
+            } else {
+                toast.error('Failed to load contests');
+            }
         } finally {
             set({ loading: false });
         }
@@ -29,7 +33,11 @@ export const useContestStore = create((set, get) => ({
             return res.data;
         } catch (error) {
             console.error('Fetch Contest Error:', error);
-            toast.error('Failed to load contest details');
+            if (error?.response?.status === 501) {
+                toast.error('Contests are not enabled on backend yet');
+            } else {
+                toast.error('Failed to load contest details');
+            }
         } finally {
             set({ loading: false });
         }
@@ -44,7 +52,11 @@ export const useContestStore = create((set, get) => ({
             return res.data;
         } catch (error) {
             console.error('Register Contest Error:', error);
-            toast.error(error.response?.data?.error || 'Registration failed');
+            if (error?.response?.status === 501) {
+                toast.error('Contests are not enabled on backend yet');
+            } else {
+                toast.error(error.response?.data?.error || 'Registration failed');
+            }
         }
     },
 
@@ -54,7 +66,11 @@ export const useContestStore = create((set, get) => ({
             set({ leaderboard: res.data });
         } catch (error) {
             console.error('Leaderboard Error:', error);
-            toast.error('Failed to load leaderboard');
+            if (error?.response?.status === 501) {
+                toast.error('Contests are not enabled on backend yet');
+            } else {
+                toast.error('Failed to load leaderboard');
+            }
         }
     },
 
@@ -66,7 +82,11 @@ export const useContestStore = create((set, get) => ({
             return res.data;
         } catch (error) {
             console.error('Create Contest Error:', error);
-            toast.error(error.response?.data?.error || 'Failed to create contest');
+            if (error?.response?.status === 501) {
+                toast.error('Contests are not enabled on backend yet');
+            } else {
+                toast.error(error.response?.data?.error || 'Failed to create contest');
+            }
         }
     }
 

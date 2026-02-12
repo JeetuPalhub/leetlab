@@ -1,5 +1,5 @@
 import { db } from './libs/db.js';
-import { Difficulty } from './generated/prisma/index.js';
+import { Difficulty } from '@prisma/client';
 
 // 50 LeetCode-style problems
 const problems = [

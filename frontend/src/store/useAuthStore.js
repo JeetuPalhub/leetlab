@@ -8,6 +8,22 @@ export const useAuthStore = create((set, get) => ({
     isSigninUp: false,
     isLoggingIn: false,
     isCheckingAuth: false,
+    profileData: null,
+    isProfileLoading: false,
+
+    getProfileData: async (userId) => {
+        try {
+            set({ isProfileLoading: true });
+            const url = userId ? `/user/profile-data?userId=${userId}` : "/user/profile-data";
+            const res = await axiosInstance.get(url);
+            set({ profileData: res.data.data });
+        } catch (error) {
+            console.log("Error fetching profile data", error);
+            toast.error("Failed to load profile insights");
+        } finally {
+            set({ isProfileLoading: false });
+        }
+    },
 
     // Set auth user directly (for profile updates)
     setAuthUser: (user) => set({ authUser: user }),

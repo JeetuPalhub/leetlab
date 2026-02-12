@@ -1,6 +1,6 @@
 import { db } from './libs/db.js';
 import bcrypt from 'bcryptjs';
-import { Difficulty } from './generated/prisma/index.js';
+import { Difficulty } from '@prisma/client';
 
 // Sample problems to seed the database
 const sampleProblems: Array<{

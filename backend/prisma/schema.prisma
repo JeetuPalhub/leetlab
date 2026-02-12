@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -21,7 +20,7 @@ enum Difficulty {
 
 model User {
   id        String       @id @default(uuid())
-  name      String?      @unique
+  name      String?
   email     String       @unique
   image     String?
   role      UserRole     @default(USER)
@@ -36,7 +35,14 @@ model User {
   playlists   Playlist[]         // Playlists created by this user
   likes       ProblemLike[]      // Problems liked by this user
   bookmarks   ProblemBookmark[]  // Problems bookmarked for revision
-
+  contestRegistrations ContestRegistration[]
+  contestsCreated Contest[]      @relation("ContestCreator")
+  
+  comments    Comment[]          // Comments made by this user
+  difficultyRatings DifficultyRating[] // Difficulty ratings made by this user
+  interviewSessions InterviewSession[] // Interview sessions for this user
+  roadmap     AIRoadmap?         // Personalized AI roadmap
+  
   @@index([role])
 }
 
@@ -63,6 +69,7 @@ model Problem {
   testCases          Json // Universal test cases (input/output pairs)
   codeSnippets       Json // Language-specific starter code snippets
   referenceSolutions Json // Correct solutions for each supported language
+  companies          String[] // Companies that often ask this problem
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,8 +81,58 @@ model Problem {
   problemsPlaylists   ProblemInPlaylist[]   // Playlists that include this problem
   likes       ProblemLike[]      // Users who liked this problem
   bookmarks   ProblemBookmark[]  // Users who bookmarked this problem
+  contestProblems ContestProblem[]
+  comments    Comment[]          // Comments for this problem
+  ratings     DifficultyRating[] // Difficulty ratings for this problem
 
   @@index([difficulty])
+}
+
+model Contest {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy      User                  @relation("ContestCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  problems       ContestProblem[]
+  registrations  ContestRegistration[]
+
+  @@index([startTime])
+  @@index([endTime])
+  @@index([createdById])
+}
+
+model ContestProblem {
+  id        String   @id @default(uuid())
+  contestId String
+  problemId String
+  points    Int      @default(100)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, problemId])
+  @@index([contestId, order])
+}
+
+model ContestRegistration {
+  id        String   @id @default(uuid())
+  userId    String
+  contestId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contestId])
+  @@index([contestId])
 }
 
 model Submission {
@@ -193,4 +250,72 @@ model ProblemBookmark {
 
   @@unique([userId, problemId])
   @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String
+  problemId String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([problemId])
+  @@index([userId])
+}
+
+model DifficultyRating {
+  id        String   @id @default(uuid())
+  userId    String
+  problemId String
+  rating    Difficulty
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+  @@index([problemId])
+}
+
+model InterviewSession {
+  id        String   @id @default(uuid())
+  userId    String
+  status    String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, CANCELLED
+  duration  Int      @default(60) // in minutes
+  problems  Json     // Array of problem info with solve status
+  score     Int?
+  feedback  Json?    // AI feedback
+  startTime DateTime @default(now())
+  endTime   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AIRoadmap {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyChallenge {
+  id        String   @id @default(uuid())
+  problemId String
+  date      DateTime @unique @default(now()) // Pick one problem per day
+  points    Int      @default(10)
+
+  @@index([date])
 }

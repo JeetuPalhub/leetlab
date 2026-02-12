@@ -6,11 +6,13 @@ import {
     updateProfileImage,
     changeUserRole,
     getAllUsers,
+    getUserProfileData,
 } from '../controllers/user.controller.js';
 
 const userRoutes = express.Router();
 
 // Protected routes - require authentication
+userRoutes.get('/profile-data', authenticate, getUserProfileData);
 userRoutes.put('/profile', authenticate, updateProfile);
 userRoutes.put('/password', authenticate, changePassword);
 userRoutes.put('/image', authenticate, updateProfileImage);

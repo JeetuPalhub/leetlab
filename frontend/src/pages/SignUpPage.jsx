@@ -26,7 +26,7 @@ const SignUpSchema = z.object({
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
-  const {signup , isSigninUp} = useAuthStore();
+  const { signup, isSigninUp } = useAuthStore();
 
   const {
     register,
@@ -37,13 +37,13 @@ const SignUpPage = () => {
   });
 
   const onSubmit = async (data) => {
-   
+
     try {
       await signup(data); // your auth logic here
       console.log("SignUp Data:", data);
     } catch (error) {
       console.error("SignUp failed:", error);
-    } 
+    }
   };
 
   return (
@@ -57,14 +57,14 @@ const SignUpPage = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                 <Code className="w-6 h-6 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold mt-2">Welcome Back</h1>
-              <p className="text-base-content/60">Sign in to your account</p>
+              <h1 className="text-2xl font-bold mt-2">Create Account</h1>
+              <p className="text-base-content/60">Join the LeetLab community</p>
             </div>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            
+
             {/* name */}
             <div className="form-control">
               <label className="label">
@@ -77,15 +77,14 @@ const SignUpPage = () => {
                 <input
                   type="text"
                   {...register("name")}
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.name ? "input-error" : ""
-                  }`}
+                  className={`input input-bordered w-full pl-10 ${errors.name ? "input-error" : ""
+                    }`}
                   placeholder="John Doe"
                 />
               </div>
               {errors.name && (
                 <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-              )}              
+              )}
             </div>
 
             {/* Email */}
@@ -100,9 +99,8 @@ const SignUpPage = () => {
                 <input
                   type="email"
                   {...register("email")}
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.email ? "input-error" : ""
-                  }`}
+                  className={`input input-bordered w-full pl-10 ${errors.email ? "input-error" : ""
+                    }`}
                   placeholder="you@example.com"
                 />
               </div>
@@ -123,9 +121,8 @@ const SignUpPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   {...register("password")}
-                  className={`input input-bordered w-full pl-10 ${
-                    errors.password ? "input-error" : ""
-                  }`}
+                  className={`input input-bordered w-full pl-10 ${errors.password ? "input-error" : ""
+                    }`}
                   placeholder="••••••••"
                 />
                 <button
@@ -157,7 +154,7 @@ const SignUpPage = () => {
                   Loading...
                 </>
               ) : (
-                "Sign in"
+                "Create Account"
               )}
             </button>
           </form>

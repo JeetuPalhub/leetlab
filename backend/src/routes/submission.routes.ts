@@ -4,6 +4,7 @@ import {
     getAllSubmissions,
     getAllTheSubmissionsForProblem,
     getSubmissionsForProblem,
+    getSubmissionById
 } from '../controllers/submission.controller.js';
 
 const router = express.Router();
@@ -11,6 +12,8 @@ const router = express.Router();
 router.get('/get-all-submissions', authenticate, getAllSubmissions);
 
 router.get('/get-submissions/:problemId', authenticate, getSubmissionsForProblem);
+
+router.get('/get-submission-details/:id', authenticate, getSubmissionById);
 
 router.get('/get-submissions-count/:problemId', authenticate, getAllTheSubmissionsForProblem);
 

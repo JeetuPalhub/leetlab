@@ -56,7 +56,7 @@ export const executeCode = async (req: Request, res: Response): Promise<void> =>
             if (result.stderr) {
                 stdout += `\nError: ${result.stderr}`;
             }
-            stdout = stdout.trim() || null;
+            stdout = stdout.trim();
             const expected_output = expected_outputs[i]?.trim();
             const passed = stdout === expected_output;
 

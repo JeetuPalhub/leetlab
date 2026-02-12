@@ -76,7 +76,7 @@ const ContestCard = ({ contest }) => {
                 </div>
 
                 <Link
-                    to={`/contests/${contest.id}`}
+                    to={`/contest/${contest.id}`}
                     className="btn btn-primary btn-block group-hover:shadow-[0_0_20px_rgba(var(--p),0.3)] transition-all"
                 >
                     {isFinished ? 'View Leaderboard' : 'Enter Contest'}

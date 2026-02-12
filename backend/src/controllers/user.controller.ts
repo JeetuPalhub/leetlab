@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { db } from '../libs/db.js';
-import { UserRole } from '../generated/prisma/index.js';
 
 // UPDATE PROFILE (name, email)
 export const updateProfile = async (req: Request, res: Response): Promise<void> => {
@@ -156,7 +155,7 @@ export const changeUserRole = async (req: Request, res: Response): Promise<void>
 
         const updatedUser = await db.user.update({
             where: { id: userId },
-            data: { role: newRole as UserRole },
+            data: { role: newRole as 'USER' | 'ADMIN' },
             select: { id: true, name: true, email: true, role: true, image: true },
         });
 
@@ -196,5 +195,84 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
     } catch (error) {
         console.error('Get All Users Error:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+};
+
+// GET CONSOLIDATED PROFILE DATA (Stats, Submissions, Playlists)
+export const getUserProfileData = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        // Allow fetching for other users if ID is provided in query, default to self
+        const queryUserId = req.query.userId as string;
+        const userId = queryUserId || req.user.id;
+
+        // 1. Fetch user specific info
+        const user = await db.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                role: true,
+                createdAt: true,
+            }
+        });
+
+        // 2. Fetch solving statistics (Solved counts by difficulty)
+        const solvedProblems = await db.problemSolved.findMany({
+            where: { userId },
+            include: {
+                problem: {
+                    select: { difficulty: true }
+                }
+            }
+        });
+
+        const stats = {
+            totalSolved: solvedProblems.length,
+            EASY: solvedProblems.filter(p => p.problem.difficulty === 'EASY').length,
+            MEDIUM: solvedProblems.filter(p => p.problem.difficulty === 'MEDIUM').length,
+            HARD: solvedProblems.filter(p => p.problem.difficulty === 'HARD').length,
+        };
+
+        // 3. Fetch recent submissions (Last 10)
+        const recentSubmissions = await db.submission.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+            include: {
+                problem: {
+                    select: { title: true, difficulty: true }
+                }
+            }
+        });
+
+        // 4. Fetch user playlists
+        const playlists = await db.playlist.findMany({
+            where: { userId },
+            include: {
+                _count: {
+                    select: { problems: true }
+                }
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                user,
+                stats,
+                recentSubmissions,
+                playlists
+            }
+        });
+    } catch (error) {
+        console.error('Get Profile Data Error:', error);
+        res.status(500).json({ error: 'Failed to fetch profile data' });
     }
 };
