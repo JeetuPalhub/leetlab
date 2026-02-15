@@ -1,146 +1,123 @@
-# 🧪 LeetLab — Code Practice Platform
+# 🧪 LeetLab — The Ultimate Code Practice Platform
 
-A full-stack LeetCode-inspired coding platform built with React, Node.js, Express, Prisma, and PostgreSQL. Features an online code editor, AI-powered hints, real-time code execution, and a fully responsive UI.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+</p>
 
-## 📸 Screenshots
+---
 
-### Homepage
+### 🚀 Level up your coding skills with LeetLab
+
+**LeetLab** is a high-performance, full-stack LeetCode clone designed for developers who want a seamless, fast, and intelligent coding environment. Built with a modern tech stack and featuring a **triple-layer execution engine**, LeetLab allows you to solve 50+ problems with real-time feedback and AI assistance.
+
+[**Explore the Code**](https://github.com/JeetuPalhub/leetlab) • [**Setup Guide**](file:///c:/Users/jeetu%20Pal%20cr/Desktop/leetlab-main/deployment.md) • [**Report Bug**](https://github.com/JeetuPalhub/leetlab/issues)
+
+---
+
+## 📸 Visual Showcase
+
+### 🚀 Stunning Landing Page
+![Landing Page](./screenshots/landing-page.png)
+
+### ✨ A Premium Dashboard
 ![Homepage](./screenshots/homepage.png)
 
-### Problems List
-![Problems List](./screenshots/problems-list.png)
+### ✨ A Premium Dashboard
+![Homepage](./screenshots/homepage.png)
 
-### Problem Page (Code Editor)
+### 💻 Professional Editor Experience
+*Featuring Monaco Editor, resizable split panels, and instant execution results.*
 ![Problem Page](./screenshots/problem-page.png)
 
-### Mobile Responsive View
-![Mobile View](./screenshots/mobile-view.png)
+### 📊 Comprehensive Problem List
+![Problems List](./screenshots/problems-list.png)
 
-## ✨ Features
+---
 
-- **🔐 Authentication** — JWT-based signup/login with role-based access (admin/user)
-- **📝 50+ Coding Problems** — Categorized by difficulty (Easy, Medium, Hard) and tags
-- **💻 Online Code Editor** — Monaco editor with syntax highlighting, auto-complete, and multi-language support (Java, Python, JavaScript)
-- **▶️ Code Execution** — Run code against test cases with real-time results via Judge0
-- **📊 Submissions** — Track all past submissions with status, runtime, and memory usage
-- **🤖 AI Assistant** — Get hints, code reviews, and solutions powered by Groq AI (Llama 3.3 70B)
-- **💬 Discussions** — Comment threads on each problem with nested replies
-- **📚 Playlists** — Organize problems into custom playlists
-- **🏆 Leaderboard** — Competitive ranking system
-- **📅 Daily Challenges** — Auto-rotating daily problems
-- **🔖 Bookmarks & Likes** — Save and interact with problems
-- **📱 Fully Responsive** — Works on desktop, tablet, and mobile with adaptive layouts
+## 💎 Key Features
 
-## 🛠️ Tech Stack
+- **⚡ Triple-Layer Execution Engine**:
+  - **Local JS Fallback**: Run JavaScript instantly with zero external dependencies.
+  - **Local Python Fallback**: Integrated local execution for Python (No API Key needed!).
+  - **RapidAPI / Judge0**: Cloud-powered support for 70+ languages.
+- **🤖 Smart AI Assistant**: Get hints, code reviews, and optimal solutions powered by **Groq AI (Llama 3.3 70B)**.
+- **🔐 Enterprise-Grade Auth**: Secure login/signup with JWT and Role-Based Access Control (RBAC).
+- **📝 Monaco Power**: The same editor that powers VS Code, right in your browser.
+- **📉 Live Metrics**: Track runtime, memory usage, and execution status for every submission.
+- **📱 Fluid Responsiveness**: A pixel-perfect experience from your 4K monitor to your mobile phone.
+- **💬 Community Threads**: Discuss solutions and learn with nested comment replies.
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite, Tailwind CSS, DaisyUI |
-| Code Editor | Monaco Editor (`@monaco-editor/react`) |
-| State Management | Zustand |
-| Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL + Prisma ORM |
-| Code Execution | Judge0 API |
-| AI | Groq API (Llama 3.3 70B) |
-| Auth | JWT + bcrypt |
+---
 
-## 🚀 Quick Start
+## 🛠️ Built With A Modern Stack
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- **Judge0 API Key** (RapidAPI) or a local Judge0 instance
+| Category | Tools |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Tailwind CSS, Zustand |
+| **Backend** | Node.js, Express, TypeScript, Zod |
+| **Database** | PostgreSQL, Prisma ORM |
+| **Execution** | Judge0, Local Node/Python Spawners |
+| **AI Layer** | Groq (Llama 3.3 70B) |
 
-### 1. Clone and Install
+---
 
+## 🚀 Quick Start in 5 Minutes
+
+### 1️⃣ Clone the Repo
 ```bash
 git clone https://github.com/JeetuPalhub/leetlab.git
 cd leetlab
+```
 
-# Install backend dependencies
+### 2️⃣ Install Everything
+```bash
+# Setup Backend
 cd backend && npm install
 
-# Install frontend dependencies
+# Setup Frontend
 cd ../frontend && npm install
 ```
 
-### 2. Configure Environment
-
-**Backend** (`backend/.env`):
+### 3️⃣ Configure Environment
+**Backend (`backend/.env`)**:
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB
-JWT_SECRET=your-secret
-RAPIDAPI_KEY=your-rapidapi-key # Get one from rapidapi.com/judge0-official/api/judge0-ce/
+JWT_SECRET=your-secret-key
+RAPIDAPI_KEY=your-key # (Optional) For C++/Java support
 ```
 
-**Frontend** (`frontend/.env.local`):
-```env
-VITE_BACKEND_API_BASEURL=http://localhost:3000/api/v1
-VITE_GROQ_API_KEY=your-groq-api-key
-```
-
-### 3. Database Setup
-
+### 4️⃣ Fire It Up!
 ```bash
-cd backend
-npx prisma generate
-npx prisma migrate deploy
-```
-
-### 4. Run Development Servers
-
-```bash
-# Terminal 1 — Backend
+# Start Backend
 cd backend && npm run dev
 
-# Terminal 2 — Frontend
-cd frontend && npm run dev
+# Start Frontend
+cd ../frontend && npm run dev
 ```
+Visit **[http://localhost:5173](http://localhost:5173)** and start coding! 🚀
 
-Open **http://localhost:5173** in your browser.
+---
 
-## 📁 Project Structure
-
-```
-leetlab/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/    # Route handlers
-│   │   ├── libs/           # Utilities (Judge0, cron)
-│   │   ├── middleware/     # Auth & error middleware
-│   │   ├── routes/         # API routes
-│   │   └── index.ts        # Express server
-│   └── prisma/             # Schema & migrations
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── store/          # Zustand state stores
-│   │   └── libs/           # Utilities
-│   └── public/
-└── screenshots/            # README screenshots
-```
-
-## 🏗️ Build for Production
+## 📁 Project Architecture
 
 ```bash
-cd backend && npm run build
-cd frontend && npm run build
+leetlab/
+├── 🌐 backend/      # Express API & Prisma Schema
+├── 🎨 frontend/     # Vite + React UI
+├── 📜 deployment/   # Deployment guides for Vercel & Render
+└── 📸 screenshots/  # High-quality UI previews
 ```
 
-## 📋 API Modules
+---
 
-- `auth` — Registration, login, session management
-- `problems` — CRUD operations, filtering, daily challenges
-- `execute-code` — Judge0 integration for code execution
-- `submissions` — Submission tracking and history
-- `playlist` — Problem playlist management
-- `comments` — Discussion threads
-- `interactions` — Likes, bookmarks
-- `leaderboard` — User rankings
-- `contest` — Contest management
-- `ai` — AI roadmap generation
+## 📄 License & Contributing
 
-## 📄 License
+Distributed under the **MIT License**. We love contributions! Feel free to fork and submit a PR.
 
-MIT
+---
+<p align="center">Made with ❤️ for the Developer Community</p>
