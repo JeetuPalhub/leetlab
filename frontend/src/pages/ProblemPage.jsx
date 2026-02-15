@@ -24,12 +24,14 @@ import {
   Maximize2,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { useProblemStore } from "../store/useProblemStore";
 import { getLanguageId, getMonacoLanguage } from "../libs/utils";
 import { useExecutionStore } from "../store/useExecution";
 import { useSubmissionStore } from "../store/useSubmissionStore";
 import { useInteractionStore } from "../store/useInteractionStore";
 import { useAIStore } from "../store/useAIStore";
+import Skeleton from "../components/Skeleton";
 import Submission from "../components/Submission";
 import SubmissionsList from "../components/SubmissionList";
 import Discussion from "../components/Discussion";
@@ -116,13 +118,23 @@ const ProblemPage = () => {
         acc[key.toUpperCase()] = snippets[key];
         return acc;
       }, {});
-      const initialCode =
-        submission?.problemId === id
-          ? submission.sourceCode?.[selectedLanguage] ||
-          submission.sourceCode ||
-          ""
-          : normalizedSnippets[selectedLanguage.toUpperCase()] || "";
-      setCode(initialCode);
+
+      // 1. Try localStorage
+      const savedCode = localStorage.getItem(`leetlab_code_${id}_${selectedLanguage}`);
+
+      if (savedCode) {
+        setCode(savedCode);
+      } else {
+        // 2. Try submission (if it's for this problem)
+        const initialCode =
+          submission?.problemId === id
+            ? submission.sourceCode?.[selectedLanguage] ||
+            submission.sourceCode ||
+            ""
+            : normalizedSnippets[selectedLanguage.toUpperCase()] || "";
+        setCode(initialCode);
+      }
+
       setTestCases(
         problem.testCases?.map((tc) => ({
           input: tc.input,
@@ -131,6 +143,13 @@ const ProblemPage = () => {
       );
     }
   }, [problem, selectedLanguage, id]);
+
+  // Persistence effect: save to localStorage on change
+  useEffect(() => {
+    if (id && selectedLanguage && code) {
+      localStorage.setItem(`leetlab_code_${id}_${selectedLanguage}`, code);
+    }
+  }, [code, id, selectedLanguage]);
 
   useEffect(() => {
     if (activeTab === "submissions" && id) {
@@ -141,6 +160,14 @@ const ProblemPage = () => {
   const handleLanguageChange = (langValue) => {
     const lang = langValue.toString().toUpperCase();
     setSelectedLanguage(lang);
+
+    // Check localStorage first
+    const savedCode = localStorage.getItem(`leetlab_code_${id}_${lang}`);
+    if (savedCode) {
+      setCode(savedCode);
+      return;
+    }
+
     const snippets = problem.codeSnippets || {};
     const normalizedSnippets = Object.keys(snippets).reduce((acc, key) => {
       acc[key.toUpperCase()] = snippets[key];
@@ -165,14 +192,64 @@ const ProblemPage = () => {
     }
   };
 
-  // ── Loading state ──
+  // ── Loading state with Skeletons ──
   if (isProblemLoading || !problem) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0d1117]">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary"></span>
-          <p className="mt-4 text-gray-400 text-sm">Loading problem...</p>
+      <div className="flex flex-col h-screen bg-[#0d1117] text-gray-200 overflow-hidden">
+        {/* Header Skeleton */}
+        <header className="h-12 border-b border-gray-800 bg-[#161b22] flex items-center justify-between px-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-8" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </header>
+
+        {/* Tab Switcher Skeleton (Mobile) */}
+        <div className="lg:hidden flex border-b border-gray-800">
+          <Skeleton className="flex-1 h-10" />
+          <Skeleton className="flex-1 h-10" />
         </div>
+
+        <main className="flex-1 flex overflow-hidden">
+          {/* Left Panel Skeleton (Desktop) */}
+          <div className="hidden lg:flex w-[35%] flex-col border-r border-gray-800 p-4 space-y-4">
+            <div className="flex gap-2 mb-4">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+            <Skeleton className="h-10 w-3/4" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+            <div className="pt-4 space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+
+          {/* Editor Skeleton */}
+          <div className="flex-1 flex flex-col">
+            <div className="h-9 bg-[#161b22] border-b border-gray-800 px-3 flex items-center">
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="flex-1 p-4">
+              <Skeleton className="h-full w-full" />
+            </div>
+            <div className="h-9 bg-[#161b22] border-t border-gray-800 px-3 flex items-center">
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -427,8 +504,8 @@ const ProblemPage = () => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1 sm:gap-1.5 py-2.5 px-2 sm:px-3 border-b-2 transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${activeTab === tab.id
-                ? "border-blue-500 text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-300"
+              ? "border-blue-500 text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-300"
               }`}
           >
             <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -448,100 +525,101 @@ const ProblemPage = () => {
   // Editor + Console Component (reusable for both mobile and desktop)
   // ──────────────────────────────────────
   const EditorPanel = () => (
-    <>
-      {/* Editor Header */}
-      <div className="h-8 sm:h-9 px-3 bg-[#161b22] border-b border-gray-800 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 font-mono">
-          <Code2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-          main.{selectedLanguage.toLowerCase()}
-        </div>
-        <button
-          onClick={formatCode}
-          className="text-[10px] sm:text-xs text-gray-500 hover:text-white flex items-center gap-1 transition-colors"
-        >
-          <Wand2 className="w-3 h-3" />
-          <span className="hidden sm:inline">Format</span>
-        </button>
-      </div>
-
-      {/* Monaco Editor — calc-based height to always leave room for console */}
-      <div
-        className="transition-[height] duration-200 ease-in-out"
-        style={{
-          height: showConsole
-            ? "calc(100% - 32px - 240px)"  /* header + console */
-            : "calc(100% - 32px - 36px)",   /* header + toggle bar */
-          minHeight: "120px",
-        }}
-      >
-        <Editor
-          key={`${id}-${selectedLanguage}`}
-          height="100%"
-          language={getMonacoLanguage(selectedLanguage)}
-          theme="vs-dark"
-          value={code}
-          onChange={(value) => setCode(value || "")}
-          onMount={handleEditorDidMount}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineNumbers: "on",
-            roundedSelection: true,
-            scrollBeyondLastLine: false,
-            readOnly: false,
-            automaticLayout: true,
-            tabSize: 2,
-            wordWrap: "on",
-            padding: { top: 12 },
-            bracketPairColorization: { enabled: true },
-            autoClosingBrackets: "always",
-            autoClosingQuotes: "always",
-            suggestOnTriggerCharacters: true,
-            quickSuggestions: true,
-            fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
-            fontLigatures: true,
-          }}
-          loading={
-            <div className="flex items-center justify-center h-full bg-[#1e1e1e]">
-              <span className="loading loading-spinner text-primary"></span>
+    <PanelGroup orientation="vertical">
+      <Panel defaultSize={75} minSize={20}>
+        <div className="flex flex-col h-full">
+          {/* Editor Header */}
+          <div className="h-8 sm:h-9 px-3 bg-[#161b22] border-b border-gray-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 font-mono">
+              <Code2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              main.{selectedLanguage.toLowerCase()}
             </div>
-          }
-        />
-      </div>
+            <button
+              onClick={formatCode}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <Wand2 className="w-3 h-3" />
+              <span className="hidden sm:inline">Format</span>
+            </button>
+          </div>
+
+          {/* Monaco Editor */}
+          <div className="flex-1 min-h-0 bg-[#0d1117]">
+            <Editor
+              key={`${id}-${selectedLanguage}`}
+              height="100%"
+              language={getMonacoLanguage(selectedLanguage)}
+              theme="vs-dark"
+              value={code}
+              onChange={(value) => setCode(value || "")}
+              onMount={handleEditorDidMount}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineNumbers: "on",
+                roundedSelection: true,
+                scrollBeyondLastLine: false,
+                readOnly: false,
+                automaticLayout: true,
+                tabSize: 2,
+                wordWrap: "on",
+                padding: { top: 12 },
+                bracketPairColorization: { enabled: true },
+                autoClosingBrackets: "always",
+                autoClosingQuotes: "always",
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true,
+                fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
+                fontLigatures: true,
+              }}
+              loading={
+                <div className="flex items-center justify-center h-full bg-[#1e1e1e]">
+                  <span className="loading loading-spinner text-primary"></span>
+                </div>
+              }
+            />
+          </div>
+        </div>
+      </Panel>
+
+      <PanelResizeHandle className="h-1.5 hover:bg-blue-600/30 transition-colors border-t border-gray-800 cursor-row-resize shrink-0 pb-[1px]" />
 
       {/* ── Console / Test Cases ── */}
-      <div
-        className="border-t border-gray-800 flex flex-col shrink-0 transition-[height] duration-200 ease-in-out"
-        style={{ height: showConsole ? "240px" : "36px" }}
+      <Panel
+        defaultSize={25}
+        minSize={10}
+        collapsible
+        onCollapse={() => setShowConsole(false)}
+        onExpand={() => setShowConsole(true)}
       >
-        {/* Toggle Bar — always visible */}
-        <button
-          onClick={() => setShowConsole(!showConsole)}
-          className="h-9 w-full px-3 bg-[#161b22] flex items-center justify-between shrink-0 cursor-pointer hover:bg-[#1c2129] transition-colors"
-        >
-          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-gray-400">
-            <Terminal className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
-            <span>Console & Test Cases</span>
-            {submission && (
-              <span
-                className={`ml-1 text-[10px] px-1.5 py-0.5 rounded ${submission.status === "Accepted"
+        <div className="h-full flex flex-col bg-[#0d1117]">
+          {/* Toggle Bar — always visible even if collapsed by library, but we handle it via buttons too */}
+          <button
+            onClick={() => setShowConsole(!showConsole)}
+            className="h-9 w-full px-3 bg-[#161b22] flex items-center justify-between shrink-0 cursor-pointer hover:bg-[#1c2129] transition-colors border-b border-gray-800"
+          >
+            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-gray-400">
+              <Terminal className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+              <span>Console & Test Cases</span>
+              {submission && (
+                <span
+                  className={`ml-1 text-[10px] px-1.5 py-0.5 rounded ${submission.status === "Accepted"
                     ? "bg-emerald-500/20 text-emerald-400"
                     : "bg-red-500/20 text-red-400"
-                  }`}
-              >
-                {submission.status}
-              </span>
-            )}
-          </div>
-          <ChevronUp
-            className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${showConsole ? "" : "rotate-180"
-              }`}
-          />
-        </button>
+                    }`}
+                >
+                  {submission.status}
+                </span>
+              )}
+            </div>
+            <ChevronUp
+              className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${showConsole ? "" : "rotate-180"
+                }`}
+            />
+          </button>
 
-        {/* Console Content */}
-        {showConsole && (
-          <div className="flex-1 overflow-y-auto bg-[#0d1117] p-2 sm:p-3 min-h-0">
+          {/* Console Content */}
+          <div className="flex-1 overflow-y-auto p-2 sm:p-3 min-h-0">
             {submission ? (
               <Submission submission={submission} />
             ) : (
@@ -580,9 +658,9 @@ const ProblemPage = () => {
               </div>
             )}
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      </Panel>
+    </PanelGroup>
   );
 
   // ──────────────────────────────────────
@@ -652,8 +730,8 @@ const ProblemPage = () => {
                 key={lang}
                 onClick={() => handleLanguageChange(lang)}
                 className={`px-2 py-1 text-[10px] sm:text-xs font-bold rounded-md transition-all ${selectedLanguage === lang.toUpperCase()
-                    ? "bg-blue-600/30 text-blue-300"
-                    : "text-gray-500 hover:text-gray-300"
+                  ? "bg-blue-600/30 text-blue-300"
+                  : "text-gray-500 hover:text-gray-300"
                   }`}
               >
                 {lang}
@@ -723,8 +801,8 @@ const ProblemPage = () => {
         <button
           onClick={() => setMobileView("problem")}
           className={`flex-1 py-2 text-center text-xs font-bold uppercase tracking-wider transition-colors ${mobileView === "problem"
-              ? "text-blue-400 bg-blue-500/10 border-b-2 border-blue-500"
-              : "text-gray-500 hover:text-gray-300"
+            ? "text-blue-400 bg-blue-500/10 border-b-2 border-blue-500"
+            : "text-gray-500 hover:text-gray-300"
             }`}
         >
           <FileText className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
@@ -733,8 +811,8 @@ const ProblemPage = () => {
         <button
           onClick={() => setMobileView("code")}
           className={`flex-1 py-2 text-center text-xs font-bold uppercase tracking-wider transition-colors ${mobileView === "code"
-              ? "text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500"
-              : "text-gray-500 hover:text-gray-300"
+            ? "text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500"
+            : "text-gray-500 hover:text-gray-300"
             }`}
         >
           <Code2 className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
@@ -759,19 +837,28 @@ const ProblemPage = () => {
         )}
       </main>
 
-      {/* ── DESKTOP LAYOUT (>= lg): side-by-side ── */}
+      {/* ── DESKTOP LAYOUT (>= lg): side-by-side with resizable panels ── */}
       <main className="flex-1 hidden lg:flex overflow-hidden min-h-0">
-        {/* Left Panel */}
-        {showLeftPanel && (
-          <div className="w-[420px] xl:w-[480px] 2xl:w-[520px] border-r border-gray-800 bg-[#0d1117] flex flex-col shrink-0 min-w-0">
-            <LeftPanel />
-          </div>
-        )}
+        <PanelGroup orientation="horizontal">
+          {/* Left Panel */}
+          {showLeftPanel && (
+            <>
+              <Panel defaultSize={35} minSize={20} className="flex flex-col">
+                <div className="h-full border-r border-gray-800 bg-[#0d1117] flex flex-col min-w-0">
+                  <LeftPanel />
+                </div>
+              </Panel>
+              <PanelResizeHandle className="w-1.5 hover:bg-blue-600/30 transition-colors border-r border-gray-800 cursor-col-resize shrink-0" />
+            </>
+          )}
 
-        {/* Right: Editor + Console */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          <EditorPanel />
-        </div>
+          {/* Right Panel: Editor + Console */}
+          <Panel minSize={30}>
+            <div className="flex-1 flex flex-col min-w-0 h-full bg-[#0d1117]">
+              <EditorPanel />
+            </div>
+          </Panel>
+        </PanelGroup>
       </main>
     </div>
   );

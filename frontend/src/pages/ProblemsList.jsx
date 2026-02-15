@@ -3,6 +3,7 @@ import { useProblemStore } from "../store/useProblemStore";
 import ProblemsTable from "../components/ProblemTable";
 import { Loader, Search, Filter, BookOpen, Layers } from "lucide-react";
 import { motion } from "framer-motion";
+import Skeleton from "../components/Skeleton";
 
 const ProblemsList = () => {
     const { getAllProblems, problems, isProblemsLoading } = useProblemStore();
@@ -13,10 +14,29 @@ const ProblemsList = () => {
 
     if (isProblemsLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-base-200">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader className="size-12 animate-spin text-primary" />
-                    <p className="text-lg font-medium text-base-content/60">Fetching problems...</p>
+            <div className="min-h-screen bg-base-200/50 pb-20">
+                <div className="bg-base-100 border-b border-base-300 pt-10 pb-16">
+                    <div className="container mx-auto px-6">
+                        <div className="max-w-6xl mx-auto">
+                            <Skeleton className="h-4 w-24 mb-4" />
+                            <Skeleton className="h-10 w-64 mb-4" />
+                            <Skeleton className="h-6 w-96" />
+                        </div>
+                    </div>
+                </div>
+                <div className="container mx-auto px-6 -mt-8">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="bg-base-100 rounded-[2rem] shadow-2xl border border-base-300 overflow-hidden p-6 md:p-10">
+                            <Skeleton className="h-4 w-48 mb-8" />
+                            <div className="space-y-4">
+                                {[...Array(8)].map((_, i) => (
+                                    <div key={i} className="flex gap-4 items-center">
+                                        <Skeleton className="h-12 w-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
