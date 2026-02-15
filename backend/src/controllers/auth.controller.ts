@@ -33,8 +33,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
         res.cookie('jwt', token, {
             httpOnly: true,
-            sameSite: 'strict',
-            secure: env.NODE_ENV !== 'development',
+            sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
+            secure: env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -78,8 +78,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
         res.cookie('jwt', token, {
             httpOnly: true,
-            sameSite: 'strict',
-            secure: env.NODE_ENV !== 'development',
+            sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
+            secure: env.NODE_ENV === 'production',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -104,8 +104,8 @@ export const logout = async (_req: Request, res: Response): Promise<void> => {
     try {
         res.clearCookie('jwt', {
             httpOnly: true,
-            sameSite: 'strict',
-            secure: env.NODE_ENV !== 'development',
+            sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
+            secure: env.NODE_ENV === 'production',
         });
 
         res.status(200).json({ success: true, message: 'Logout successful' });
