@@ -22,6 +22,7 @@ const MockInterviewPage = lazy(() => import("./pages/MockInterviewPage"));
 const EditProblem = lazy(() => import("./pages/EditProblem"));
 const SubmissionDetails = lazy(() => import("./pages/SubmissionDetails"));
 const ProblemsList = lazy(() => import("./pages/ProblemsList"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -44,7 +45,7 @@ const App = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-start  ">
+    <div className="flex flex-col w-full min-h-screen">
       <Toaster />
       <Suspense fallback={pageFallback}>
         <Routes>
@@ -130,6 +131,9 @@ const App = () => {
             path="/profile/:userId?"
             element={authUser ? <Profile /> : <Navigate to="/login" />}
           />
+
+          {/* Catch-all 404 route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </div>

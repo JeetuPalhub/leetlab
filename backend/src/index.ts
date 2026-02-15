@@ -1,6 +1,8 @@
-import express, { Application } from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config(); // Must be FIRST — before any imports that use process.env
+
+import express, { Application, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { apiLimiter, codeExecutionLimiter, aiLimiter } from './middlewares/rateLimiter.js';
@@ -21,9 +23,6 @@ import interviewRoutes from './routes/interview.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import { initCronJobs } from './libs/cron.js';
 import challengeRoutes from './routes/challenge.routes.js';
-
-
-dotenv.config();
 
 const app: Application = express();
 
@@ -65,6 +64,16 @@ app.use('/api/v1/interviews', interviewRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/challenges', challengeRoutes);
 
+// 404 handler for unknown routes
+app.use((_req: Request, res: Response) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
+// Global error handler middleware
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('Unhandled Error:', err.stack || err.message);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;

@@ -27,6 +27,7 @@ export const useSubmissionStore = create((set, get) => ({
 
   getSubmissionForProblem: async (problemId) => {
     try {
+      set({ isLoading: true });
       const res = await axiosInstance.get(
         `/submissions/get-submissions/${problemId}`
       );

@@ -43,6 +43,12 @@ export const getSubmissionsForProblem = async (req: Request, res: Response): Pro
                 userId: userId,
                 problemId: problemId,
             },
+            include: {
+                testCases: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
         });
 
         res.status(200).json({

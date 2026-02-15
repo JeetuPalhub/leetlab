@@ -30,6 +30,7 @@ export const createComment = async (req: Request, res: Response): Promise<void> 
                         id: true,
                         name: true,
                         image: true,
+                        role: true,
                     },
                 },
             },
@@ -62,6 +63,7 @@ export const getCommentsByProblem = async (req: Request, res: Response): Promise
                         id: true,
                         name: true,
                         image: true,
+                        role: true,
                     },
                 },
                 replies: {
@@ -71,6 +73,7 @@ export const getCommentsByProblem = async (req: Request, res: Response): Promise
                                 id: true,
                                 name: true,
                                 image: true,
+                                role: true,
                             },
                         },
                     },

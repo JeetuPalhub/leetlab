@@ -2,9 +2,8 @@ import { Request, Response } from 'express';
 import { db } from '../libs/db.js';
 import {
     getJudge0LanguageId,
-    pollBatchResults,
-    submitBatch,
 } from '../libs/problem.libs.js';
+import { executeBatchWithPiston } from '../libs/piston.libs.js';
 import { CreateProblemBody, UpdateProblemBody } from '../types/index.js';
 
 // Final Create Problem Handler
@@ -35,39 +34,46 @@ export const createProblem = async (req: Request, res: Response): Promise<void> 
     try {
         // Step 2: Loop through each reference solution for different languages
         for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
-            // Step 2.1: Get Judge0 language ID for the current language
+            // Step 2.1: Get Judge0 language ID (reused for Piston as they share IDs often or use mapping)
             const languageId = getJudge0LanguageId(language);
             if (!languageId) {
                 res.status(400).json({ error: `Unsupported language: ${language}` });
                 return;
             }
 
-            // Step 2.2: Prepare Judge0 submissions for all test cases
-            const submissions = testCases.map(({ input, output }) => ({
-                source_code: solutionCode,
-                language_id: languageId,
-                stdin: input,
-                expected_output: output,
-            }));
+            // Step 2.2: Prepare inputs for Piston
+            const inputs = testCases.map((tc) => tc.input);
 
-            console.log('Submissions:', submissions);
+            // Step 2.3: Execute all test cases using Piston
+            const results = await executeBatchWithPiston(solutionCode, languageId, inputs);
 
-            // Step 2.3: Submit all test cases in one batch
-            const submissionResults = await submitBatch(submissions);
-
-            // Step 2.4: Extract tokens from response
-            const tokens = submissionResults.map((r) => r.token);
-
-            // Step 2.5: Poll Judge0 until all submissions are done
-            const results = await pollBatchResults(tokens);
-
-            // Step 2.6: Validate that each test case passed (status.id === 3)
+            // Step 2.4: Validate results
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
+                const expectedOutput = testCases[i].output.trim();
+                const actualOutput = result.stdout.trim();
+
+                if (actualOutput !== expectedOutput) {
+                    res.status(400).json({
+                        error: `Validation failed for ${language} on test case ${i + 1}`,
+                        details: {
+                            input: inputs[i],
+                            expected: expectedOutput,
+                            actual: actualOutput,
+                            error: result.stderr
+                        },
+                    });
+                    return;
+                }
+
+                // Also check for execution errors (non-zero exit code)
                 if (result.status.id !== 3) {
                     res.status(400).json({
-                        error: `Validation failed for ${language} on input: ${submissions[i].stdin}`,
-                        details: result,
+                        error: `Runtime error for ${language} on test case ${i + 1}`,
+                        details: {
+                            input: inputs[i],
+                            error: result.stderr || result.status.description
+                        }
                     });
                     return;
                 }
@@ -190,23 +196,27 @@ export const updateProblem = async (req: Request, res: Response): Promise<void> 
                 return;
             }
 
-            const submissions = testCases.map(({ input, output }) => ({
-                source_code: solutionCode,
-                language_id: languageId,
-                stdin: input,
-                expected_output: output,
-            }));
+            // Prepare inputs for Piston
+            const inputs = testCases.map((tc) => tc.input);
 
-            const submissionResults = await submitBatch(submissions);
-            const tokens = submissionResults.map((r) => r.token);
-            const results = await pollBatchResults(tokens);
+            // Execute all test cases using Piston
+            const results = await executeBatchWithPiston(solutionCode, languageId, inputs);
 
+            // Validate results
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
-                if (result.status.id !== 3) {
+                const expectedOutput = testCases[i].output.trim();
+                const actualOutput = result.stdout.trim();
+
+                if (actualOutput !== expectedOutput) {
                     res.status(400).json({
-                        error: `Validation failed for ${language} on input: ${submissions[i].stdin}`,
-                        details: result,
+                        error: `Validation failed for ${language} on test case ${i + 1}`,
+                        details: {
+                            input: inputs[i],
+                            expected: expectedOutput,
+                            actual: actualOutput,
+                            error: result.stderr
+                        },
                     });
                     return;
                 }

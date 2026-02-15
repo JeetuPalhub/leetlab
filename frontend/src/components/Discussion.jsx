@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCommentStore } from '../store/useCommentStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { MessageSquare, Send, Trash2, Reply, ChevronDown, ChevronUp, Sparkles, User } from 'lucide-react';
+import { MessageSquare, Send, Trash2, Reply, ChevronDown, ChevronUp, Sparkles, User, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
