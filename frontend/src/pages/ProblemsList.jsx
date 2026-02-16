@@ -6,13 +6,31 @@ import { motion } from "framer-motion";
 import Skeleton from "../components/Skeleton";
 
 const ProblemsList = () => {
-    const { getAllProblems, problems, isProblemsLoading } = useProblemStore();
+    const { getAllProblems, problems, isProblemsLoading, pagination } = useProblemStore();
+    const [search, setSearch] = React.useState("");
+    const [difficulty, setDifficulty] = React.useState("ALL");
+    const [selectedTag, setSelectedTag] = React.useState("ALL");
 
     useEffect(() => {
-        getAllProblems();
-    }, [getAllProblems]);
+        const delayDebounceFn = setTimeout(() => {
+            getAllProblems({ page: 1, search, difficulty, tags: selectedTag });
+        }, 500);
 
-    if (isProblemsLoading) {
+        return () => clearTimeout(delayDebounceFn);
+    }, [search, difficulty, selectedTag, getAllProblems]);
+
+    const handleLoadMore = () => {
+        if (pagination.hasMore) {
+            getAllProblems({
+                page: pagination.currentPage + 1,
+                search,
+                difficulty,
+                tags: selectedTag
+            }, true);
+        }
+    };
+
+    if (isProblemsLoading && problems.length === 0) {
         return (
             <div className="min-h-screen bg-base-200/50 pb-20">
                 <div className="bg-base-100 border-b border-base-300 pt-10 pb-16">
@@ -80,15 +98,35 @@ const ProblemsList = () => {
                         <div className="p-6 md:p-10">
                             <div className="flex items-center gap-2 mb-8 text-base-content/40">
                                 <Layers className="w-5 h-5" />
-                                <span className="font-bold text-sm uppercase tracking-widest">{problems.length} Problems Available</span>
+                                <span className="font-bold text-sm uppercase tracking-widest">{pagination.totalProblems} Problems Available</span>
                             </div>
 
-                            <ProblemsTable problems={problems} />
+                            <ProblemsTable
+                                problems={problems}
+                                search={search}
+                                setSearch={setSearch}
+                                difficulty={difficulty}
+                                setDifficulty={setDifficulty}
+                                selectedTag={selectedTag}
+                                setSelectedTag={setSelectedTag}
+                            />
+
+                            {pagination.hasMore && (
+                                <div className="flex justify-center mt-10">
+                                    <button
+                                        className={`btn btn-primary btn-wide ${isProblemsLoading ? 'loading' : ''}`}
+                                        onClick={handleLoadMore}
+                                        disabled={isProblemsLoading}
+                                    >
+                                        {isProblemsLoading ? 'Loading...' : 'Load More Problems'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Pro Tip Section */}
+                {/* Pro Tip Section ... */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}

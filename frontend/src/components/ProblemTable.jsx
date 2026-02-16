@@ -9,20 +9,24 @@ import { usePlaylistStore } from "../store/usePlaylistStore";
 import EmptyState from "./EmptyState";
 
 
-const ProblemsTable = ({ problems }) => {
+const ProblemsTable = ({
+  problems,
+  search,
+  setSearch,
+  difficulty,
+  setDifficulty,
+  selectedTag,
+  setSelectedTag
+}) => {
   const { authUser } = useAuthStore();
   const { onDeleteProblem } = useActions();
   const { createPlaylist } = usePlaylistStore();
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [difficulty, setDifficulty] = useState("ALL");
-  const [selectedTag, setSelectedTag] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = useState(false);
   const [selectedProblemId, setSelectedProblemId] = useState(null);
 
-  // Extract all unique tags from problems
+  // Extract all unique tags from problems (this might still be useful for the filter dropdown)
   const allTags = useMemo(() => {
     if (!Array.isArray(problems)) return [];
     const tagsSet = new Set();
@@ -32,30 +36,6 @@ const ProblemsTable = ({ problems }) => {
 
   // Define allowed difficulties
   const difficulties = ["EASY", "MEDIUM", "HARD"];
-
-  // Filter problems based on search, difficulty, and tags
-  const filteredProblems = useMemo(() => {
-    return (problems || [])
-      .filter((problem) =>
-        problem.title.toLowerCase().includes(search.toLowerCase())
-      )
-      .filter((problem) =>
-        difficulty === "ALL" ? true : problem.difficulty === difficulty
-      )
-      .filter((problem) =>
-        selectedTag === "ALL" ? true : problem.tags?.includes(selectedTag)
-      );
-  }, [problems, search, difficulty, selectedTag]);
-
-  // Pagination logic
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
-  const paginatedProblems = useMemo(() => {
-    return filteredProblems.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
-  }, [filteredProblems, currentPage]);
 
   const handleDelete = (id) => {
     onDeleteProblem(id);
@@ -143,8 +123,8 @@ const ProblemsTable = ({ problems }) => {
             </tr>
           </thead>
           <tbody>
-            {paginatedProblems.length > 0 ? (
-              paginatedProblems.map((problem) => {
+            {problems.length > 0 ? (
+              problems.map((problem) => {
                 const isSolved = problem.solvedBy.some(
                   (user) => user.userId === authUser?.id
                 );
@@ -232,27 +212,6 @@ const ProblemsTable = ({ problems }) => {
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-center mt-6 gap-2">
-        <button
-          className="btn btn-sm"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((prev) => prev - 1)}
-        >
-          Prev
-        </button>
-        <span className="btn btn-ghost btn-sm">
-          {currentPage} / {totalPages}
-        </span>
-        <button
-          className="btn btn-sm"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((prev) => prev + 1)}
-        >
-          Next
-        </button>
       </div>
 
       {/* Modals */}

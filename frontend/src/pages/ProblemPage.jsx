@@ -45,6 +45,7 @@ const ProblemPage = () => {
     getSubmissionForProblem,
     getSubmissionCountForProblem,
     submissionCount,
+    pagination: submissionPagination,
   } = useSubmissionStore();
   const {
     interactionStatus,
@@ -334,10 +335,17 @@ const ProblemPage = () => {
         );
 
       case "submissions":
+        const handleLoadMoreSubmissions = () => {
+          if (submissionPagination.hasMore) {
+            getSubmissionForProblem(id, submissionPagination.currentPage + 1, submissionPagination.limit, true);
+          }
+        };
         return (
           <SubmissionsList
             submissions={submissions}
             isLoading={isSubmissionsLoading}
+            pagination={submissionPagination}
+            onLoadMore={handleLoadMoreSubmissions}
           />
         );
 

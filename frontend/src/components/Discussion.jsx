@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Discussion = ({ problemId }) => {
-    const { comments, getComments, addComment, deleteComment, isLoading } = useCommentStore();
+    const { comments, getComments, addComment, deleteComment, isLoading, pagination } = useCommentStore();
     const { authUser } = useAuthStore();
     const [newComment, setNewComment] = useState("");
     const [replyTo, setReplyTo] = useState(null);
@@ -17,6 +17,12 @@ const Discussion = ({ problemId }) => {
             getComments(problemId);
         }
     }, [problemId, getComments]);
+
+    const handleLoadMore = () => {
+        if (pagination.hasMore) {
+            getComments(problemId, pagination.currentPage + 1, pagination.limit, true);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -134,7 +140,9 @@ const Discussion = ({ problemId }) => {
                         <MessageSquare className="w-6 h-6 text-blue-500" />
                         Discussion
                     </h3>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">{comments.length} Thoughts Shared</p>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">
+                        {pagination?.totalComments || 0} Thoughts Shared
+                    </p>
                 </div>
             </div>
 
@@ -186,6 +194,19 @@ const Discussion = ({ problemId }) => {
                     {comments.map(comment => (
                         <CommentItem key={comment.id} comment={comment} />
                     ))}
+
+                    {/* Load More Button */}
+                    {pagination.hasMore && (
+                        <div className="flex justify-center mt-8 pb-8">
+                            <button
+                                onClick={handleLoadMore}
+                                disabled={isLoading}
+                                className={`btn rounded-2xl px-12 h-16 border-0 bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:translate-y-0 ${isLoading ? 'loading' : ''}`}
+                            >
+                                {isLoading ? 'Synchronizing more nodes...' : 'Discover older thoughts'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="text-center p-20 bg-white/5 rounded-[3rem] border-4 border-dashed border-white/5">

@@ -115,19 +115,65 @@ export const getAllProblems = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const problems = await db.problem.findMany({
-            include: {
-                solvedBy: {
-                    where: {
-                        userId: req.user.id,
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+
+        const { search, difficulty, tags } = req.query;
+
+        const where: any = {};
+
+        if (search) {
+            where.title = {
+                contains: search as string,
+                mode: 'insensitive',
+            };
+        }
+
+        if (difficulty && difficulty !== 'ALL') {
+            where.difficulty = difficulty;
+        }
+
+        if (tags && tags !== 'ALL') {
+            // Assuming tags is a comma-separated string or just one tag
+            const tagsArray = (tags as string).split(',');
+            where.tags = {
+                hasEvery: tagsArray,
+            };
+        }
+
+        const [problems, totalProblems] = await Promise.all([
+            db.problem.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    solvedBy: {
+                        where: {
+                            userId: req.user.id,
+                        },
                     },
                 },
-            },
-        });
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            db.problem.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(totalProblems / limit);
+
         res.status(200).json({
             success: true,
             message: 'Problems fetched successfully',
             problems,
+            pagination: {
+                totalProblems,
+                totalPages,
+                currentPage: page,
+                limit,
+                hasMore: page < totalPages,
+            },
         });
     } catch (error) {
         console.error('Error fetching problems:', error);

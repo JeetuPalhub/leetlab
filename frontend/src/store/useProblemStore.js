@@ -9,15 +9,54 @@ export const useProblemStore = create((set, get) => ({
   problems: [],
   problem: null,
   solvedProblems: [],
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalProblems: 0,
+    hasMore: true,
+  },
+  lastFetched: 0,
+  searchParams: {},
 
-  getAllProblems: async () => {
+  getAllProblems: async (params = {}, append = false) => {
+    const { page = 1, limit = 10, search = "", difficulty = "ALL", tags = "ALL" } = params;
+
+    // Simple 1-minute cache for the first page if params haven't changed
+    const now = Date.now();
+    const currentParams = JSON.stringify({ search, difficulty, tags });
+    const { lastFetched, searchParams, problems } = get();
+
+    if (!append && page === 1 &&
+      problems.length > 0 &&
+      now - lastFetched < 60000 &&
+      currentParams === JSON.stringify(searchParams)) {
+      return;
+    }
+
     try {
       set({ isProblemsLoading: true });
-      const res = await axiosInstance.get("/problems/get-all-problems");
+      let url = `/problems/get-all-problems?page=${page}&limit=${limit}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (difficulty !== "ALL") url += `&difficulty=${difficulty}`;
+      if (tags !== "ALL") url += `&tags=${tags}`;
 
-      set({ problems: res.data.problems });
+      const res = await axiosInstance.get(url);
 
-
+      if (append) {
+        set((state) => ({
+          problems: [...state.problems, ...res.data.problems],
+          pagination: res.data.pagination,
+          lastFetched: now,
+          searchParams: { search, difficulty, tags }
+        }));
+      } else {
+        set({
+          problems: res.data.problems,
+          pagination: res.data.pagination,
+          lastFetched: now,
+          searchParams: { search, difficulty, tags }
+        });
+      }
     } catch (error) {
       console.log("Error getting all problems", error);
       toast.error("Error getting all problems");

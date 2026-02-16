@@ -4,15 +4,40 @@ import toast from 'react-hot-toast';
 
 export const useContestStore = create((set, get) => ({
     contests: [],
+    pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalContests: 0,
+        hasMore: false,
+    },
     currentContest: null,
     leaderboard: [],
     loading: false,
+    lastFetched: 0,
 
-    fetchContests: async () => {
+    fetchContests: async (page = 1, limit = 10, append = false) => {
+        const now = Date.now();
+        const { lastFetched, contests } = get();
+        if (!append && page === 1 && contests.length > 0 && now - lastFetched < 60000) {
+            return;
+        }
+
         set({ loading: true });
         try {
-            const res = await axiosInstance.get('/contest');
-            set({ contests: res.data });
+            const res = await axiosInstance.get(`/contest?page=${page}&limit=${limit}`);
+            if (append) {
+                set((state) => ({
+                    contests: [...state.contests, ...res.data.contests],
+                    pagination: res.data.pagination,
+                    lastFetched: now,
+                }));
+            } else {
+                set({
+                    contests: res.data.contests,
+                    pagination: res.data.pagination,
+                    lastFetched: now,
+                });
+            }
         } catch (error) {
             console.error('Fetch Contests Error:', error);
             if (error?.response?.status === 501) {

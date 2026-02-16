@@ -12,7 +12,17 @@ type LeaderboardEntry = {
     successRate: number;
 };
 
-const buildLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+// Simple in-memory cache
+let cachedLeaderboard: LeaderboardEntry[] | null = null;
+let lastCacheUpdate: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const buildLeaderboard = async (forceUpdate = false): Promise<LeaderboardEntry[]> => {
+    const now = Date.now();
+    if (!forceUpdate && cachedLeaderboard && (now - lastCacheUpdate < CACHE_DURATION)) {
+        return cachedLeaderboard;
+    }
+
     const users = await db.user.findMany({
         select: {
             id: true,
@@ -57,17 +67,31 @@ const buildLeaderboard = async (): Promise<LeaderboardEntry[]> => {
             ...user,
         }));
 
+    cachedLeaderboard = rows;
+    lastCacheUpdate = now;
     return rows;
 };
 
 // GET TOP USERS BY COMPUTED POINTS
 export const getLeaderboard = async (req: Request, res: Response): Promise<void> => {
     try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 50;
+        const skip = (page - 1) * limit;
+
         const leaderboard = await buildLeaderboard();
+        const paginatedLeaderboard = leaderboard.slice(skip, skip + limit);
 
         res.status(200).json({
             success: true,
-            leaderboard: leaderboard.slice(0, 50),
+            leaderboard: paginatedLeaderboard,
+            pagination: {
+                totalUsers: leaderboard.length,
+                totalPages: Math.ceil(leaderboard.length / limit),
+                currentPage: page,
+                limit,
+                hasMore: (skip + limit) < leaderboard.length
+            }
         });
     } catch (error) {
         console.error('Get Leaderboard Error:', error);

@@ -2,15 +2,44 @@ import { create } from "zustand";
 import { axiosInstance } from "../libs/axios.js";
 import toast from "react-hot-toast";
 
-export const useCommentStore = create((set) => ({
+export const useCommentStore = create((set, get) => ({
     comments: [],
     isLoading: false,
+    pagination: {
+        totalComments: 0,
+        totalPages: 0,
+        currentPage: 1,
+        limit: 10,
+        hasMore: false,
+    },
+    lastFetched: 0,
 
-    getComments: async (problemId) => {
+    getComments: async (problemId, page = 1, limit = 10, append = false) => {
+        const now = Date.now();
+        const { lastFetched, comments } = get();
+
+        // Cache: 1 minute for the first page
+        if (!append && page === 1 && comments.length > 0 && now - lastFetched < 60000) {
+            return;
+        }
+
         set({ isLoading: true });
         try {
-            const res = await axiosInstance.get(`/comments/${problemId}`);
-            set({ comments: res.data.comments });
+            const res = await axiosInstance.get(`/comments/${problemId}?page=${page}&limit=${limit}`);
+
+            if (append) {
+                set((state) => ({
+                    comments: [...state.comments, ...res.data.comments],
+                    pagination: res.data.pagination,
+                    lastFetched: now,
+                }));
+            } else {
+                set({
+                    comments: res.data.comments,
+                    pagination: res.data.pagination,
+                    lastFetched: now,
+                });
+            }
         } catch (error) {
             console.error("Error fetching comments:", error);
         } finally {
@@ -26,9 +55,15 @@ export const useCommentStore = create((set) => ({
                 parentId
             });
 
-            // Re-fetch all comments to ensure threading/ordering is correct
-            const commentsRes = await axiosInstance.get(`/comments/${problemId}`);
-            set({ comments: commentsRes.data.comments });
+            // If it's a top-level comment, refetch first page to show it
+            // If it's a reply, we might need a different strategy, but for now reset first page
+            const now = Date.now();
+            const commentsRes = await axiosInstance.get(`/comments/${problemId}?page=1&limit=10`);
+            set({
+                comments: commentsRes.data.comments,
+                pagination: commentsRes.data.pagination,
+                lastFetched: now
+            });
 
             toast.success("Comment added");
             return res.data.comment;
@@ -42,9 +77,14 @@ export const useCommentStore = create((set) => ({
         try {
             await axiosInstance.delete(`/comments/${commentId}`);
 
-            // Re-fetch
-            const commentsRes = await axiosInstance.get(`/comments/${problemId}`);
-            set({ comments: commentsRes.data.comments });
+            // Reset to first page
+            const now = Date.now();
+            const commentsRes = await axiosInstance.get(`/comments/${problemId}?page=1&limit=10`);
+            set({
+                comments: commentsRes.data.comments,
+                pagination: commentsRes.data.pagination,
+                lastFetched: now
+            });
 
             toast.success("Comment deleted");
         } catch (error) {

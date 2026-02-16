@@ -51,45 +51,65 @@ export const createComment = async (req: Request, res: Response): Promise<void> 
 export const getCommentsByProblem = async (req: Request, res: Response): Promise<void> => {
     try {
         const { problemId } = req.params;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
 
-        const comments = await db.comment.findMany({
-            where: {
-                problemId: problemId as string,
-                parentId: null, // Get top-level comments first
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        image: true,
-                        role: true,
-                    },
+        const [comments, totalComments] = await Promise.all([
+            db.comment.findMany({
+                where: {
+                    problemId: problemId as string,
+                    parentId: null, // Get top-level comments first
                 },
-                replies: {
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                name: true,
-                                image: true,
-                                role: true,
-                            },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            image: true,
+                            role: true,
                         },
                     },
-                    orderBy: {
-                        createdAt: 'asc',
+                    replies: {
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    image: true,
+                                    role: true,
+                                },
+                            },
+                        },
+                        orderBy: {
+                            createdAt: 'asc',
+                        },
                     },
                 },
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
+                skip,
+                take: limit,
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            db.comment.count({
+                where: {
+                    problemId: problemId as string,
+                    parentId: null,
+                },
+            }),
+        ]);
 
         res.status(200).json({
             success: true,
             comments,
+            pagination: {
+                totalComments,
+                totalPages: Math.ceil(totalComments / limit),
+                currentPage: page,
+                limit,
+                hasMore: (skip + limit) < totalComments,
+            },
         });
     } catch (error) {
         console.error('Get Comments Error:', error);

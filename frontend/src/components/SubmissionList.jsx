@@ -18,7 +18,7 @@ import EmptyState from "./EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMonacoLanguage } from "../libs/utils";
 
-const SubmissionsList = ({ submissions, isLoading }) => {
+const SubmissionsList = ({ submissions, isLoading, pagination, onLoadMore }) => {
   const [expandedId, setExpandedId] = useState(null);
 
   // Helper function to safely parse JSON strings
@@ -36,7 +36,7 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Helper function to calculate average memory usage
   const calculateAverageMemory = (memoryData) => {
     const memoryArray = safeParse(memoryData).map((m) =>
-      typeof m === 'string' ? parseFloat(m.split(" ")[0]) : m
+      m && typeof m === 'string' ? parseFloat(m.split(" ")[0]) : m
     );
     if (memoryArray.length === 0) return 0;
     return (
@@ -47,7 +47,7 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   // Helper function to calculate average runtime
   const calculateAverageTime = (timeData) => {
     const timeArray = safeParse(timeData).map((t) =>
-      typeof t === 'string' ? parseFloat(t.split(" ")[0]) : t
+      t && typeof t === 'string' ? parseFloat(t.split(" ")[0]) : t
     );
     if (timeArray.length === 0) return 0;
     return timeArray.reduce((acc, curr) => acc + curr, 0) / timeArray.length;
@@ -67,8 +67,8 @@ const SubmissionsList = ({ submissions, isLoading }) => {
     return JSON.stringify(sourceCode, null, 2);
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state (only for initial load)
+  if (isLoading && !submissions?.length) {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4 opacity-50">
         <span className="loading loading-spinner loading-lg text-blue-500"></span>
@@ -78,7 +78,7 @@ const SubmissionsList = ({ submissions, isLoading }) => {
   }
 
   // No submissions state
-  if (!submissions?.length) {
+  if (!submissions?.length && !isLoading) {
     return (
       <div className="text-center p-20 bg-white/5 rounded-[3rem] border-4 border-dashed border-white/5">
         <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -181,11 +181,6 @@ const SubmissionsList = ({ submissions, isLoading }) => {
                         }}
                       />
                     </div>
-                    <div className="mt-6 flex justify-end">
-                      <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
-                        View Full Analytics <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </div>
                   </div>
                 </motion.div>
               )}
@@ -193,6 +188,28 @@ const SubmissionsList = ({ submissions, isLoading }) => {
           </motion.div>
         );
       })}
+
+      {/* Load More Button */}
+      {pagination?.hasMore && (
+        <div className="flex justify-center py-6">
+          <button
+            onClick={onLoadMore}
+            disabled={isLoading}
+            className={`flex items-center gap-2 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-gray-400 py-3 px-8 rounded-xl transition-all ${isLoading ? 'opacity-50' : ''}`}
+          >
+            {isLoading ? (
+              <>
+                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                FETCHING LOGS...
+              </>
+            ) : (
+              <>
+                FETCH MORE ATTEMPTS <ArrowRight className="w-3 h-3" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -58,21 +58,40 @@ export const createContest = async (req: Request, res: Response) => {
 
 export const getContests = async (req: Request, res: Response) => {
     try {
-        const contests = await db.contest.findMany({
-            include: {
-                _count: {
-                    select: {
-                        problems: true,
-                        registrations: true
-                    }
-                }
-            },
-            orderBy: {
-                startTime: 'desc'
-            }
-        });
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
 
-        res.json(contests);
+        const [contests, totalContests] = await Promise.all([
+            db.contest.findMany({
+                include: {
+                    _count: {
+                        select: {
+                            problems: true,
+                            registrations: true
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy: {
+                    startTime: 'desc'
+                }
+            }),
+            db.contest.count(),
+        ]);
+
+        res.json({
+            success: true,
+            contests,
+            pagination: {
+                totalContests,
+                totalPages: Math.ceil(totalContests / limit),
+                currentPage: page,
+                limit,
+                hasMore: (skip + limit) < totalContests,
+            },
+        });
     } catch (error) {
         console.error('Get Contests Error:', error);
         res.status(500).json({ error: 'Failed to fetch contests' });

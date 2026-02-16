@@ -5,18 +5,43 @@ import toast from "react-hot-toast";
 export const useSubmissionStore = create((set, get) => ({
   isLoading: false,
   submissions: [],
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalSubmissions: 0,
+    hasMore: false,
+  },
   submission: null,
   submissionCount: null,
+  lastFetched: 0,
 
-  getAllSubmissions: async (userId) => {
+  getAllSubmissions: async (userId, page = 1, limit = 10, append = false) => {
+    const now = Date.now();
+    const { lastFetched, submissions } = get();
+    if (!append && page === 1 && submissions.length > 0 && now - lastFetched < 60000) {
+      return;
+    }
+
     try {
       set({ isLoading: true });
-      const url = userId
-        ? `/submissions/get-all-submissions?userId=${userId}`
-        : "/submissions/get-all-submissions";
+      let url = `/submissions/get-all-submissions?page=${page}&limit=${limit}`;
+      if (userId) url += `&userId=${userId}`;
+
       const res = await axiosInstance.get(url);
 
-      set({ submissions: res.data.submissions });
+      if (append) {
+        set((state) => ({
+          submissions: [...state.submissions, ...res.data.submissions],
+          pagination: res.data.pagination,
+          lastFetched: now,
+        }));
+      } else {
+        set({
+          submissions: res.data.submissions,
+          pagination: res.data.pagination,
+          lastFetched: now,
+        });
+      }
 
     } catch (error) {
       console.log("Error getting all submissions", error);
@@ -25,22 +50,27 @@ export const useSubmissionStore = create((set, get) => ({
     }
   },
 
-  getSubmissionForProblem: async (problemId) => {
+  getSubmissionForProblem: async (problemId, page = 1, limit = 10, append = false) => {
     try {
       set({ isLoading: true });
       const res = await axiosInstance.get(
-        `/submissions/get-submissions/${problemId}`
+        `/submissions/get-submissions/${problemId}?page=${page}&limit=${limit}`
       );
 
-      set({ submission: res.data.submissions });
-
-
-
+      if (append) {
+        set((state) => ({
+          submission: [...(Array.isArray(state.submission) ? state.submission : []), ...res.data.submissions],
+          pagination: res.data.pagination,
+        }));
+      } else {
+        set({
+          submission: res.data.submissions,
+          pagination: res.data.pagination
+        });
+      }
     } catch (error) {
       console.log("Error getting submissions for problem", error);
-
       toast.error("Error getting submissions for problem");
-
     } finally {
       set({ isLoading: false });
     }

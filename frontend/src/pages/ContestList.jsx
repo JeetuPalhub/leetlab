@@ -5,18 +5,24 @@ import { useContestStore } from '../store/useContestStore';
 import ContestCard from '../components/ContestCard';
 
 const ContestList = () => {
-    const { contests, fetchContests, loading } = useContestStore();
+    const { contests, fetchContests, loading, pagination } = useContestStore();
 
     useEffect(() => {
         fetchContests();
-    }, [fetchContests]);
+    }, []);
+
+    const handleLoadMore = () => {
+        if (pagination.hasMore) {
+            fetchContests(pagination.currentPage + 1, pagination.limit, true);
+        }
+    }
 
     const liveContests = contests.filter(c => new Date() >= new Date(c.startTime) && new Date() <= new Date(c.endTime));
     const upcomingContests = contests.filter(c => new Date() < new Date(c.startTime));
     const finishedContests = contests.filter(c => new Date() > new Date(c.endTime));
 
     return (
-        <div className="min-h-screen relative overflow-hidden">
+        <div className="min-h-screen relative overflow-hidden pb-12">
             {/* Background Effects */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
@@ -74,17 +80,17 @@ const ContestList = () => {
                                 <ContestCard key={contest.id} contest={contest} />
                             ))}
                         </div>
-                    ) : (
+                    ) : !loading && liveContests.length === 0 && upcomingContests.length === 0 && finishedContests.length === 0 ? (
                         <div className="bg-base-100 rounded-2xl border border-base-200 p-12 text-center">
                             <Info className="w-10 h-10 text-base-content/20 mx-auto mb-3" />
-                            <p className="text-base-content/50">No upcoming contests scheduled yet. Check back soon!</p>
+                            <p className="text-base-content/50">No contests scheduled yet. Check back soon!</p>
                         </div>
-                    )}
+                    ) : null}
                 </section>
 
                 {/* Finished Contests */}
                 {finishedContests.length > 0 && (
-                    <section>
+                    <section className="mb-12">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="p-2.5 rounded-xl bg-base-200 text-base-content/40">
                                 <Trophy className="w-5 h-5" />
@@ -100,8 +106,21 @@ const ContestList = () => {
                 )}
 
                 {loading && (
-                    <div className="flex justify-center py-20">
+                    <div className="flex justify-center py-10">
                         <span className="loading loading-spinner loading-lg text-primary"></span>
+                    </div>
+                )}
+
+                {/* Load More Button */}
+                {pagination.hasMore && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loading}
+                            className={`btn btn-primary btn-wide shadow-lg ${loading ? 'loading' : ''}`}
+                        >
+                            {loading ? 'Fetching more arenas...' : 'Discover More Contests'}
+                        </button>
                     </div>
                 )}
             </div>
