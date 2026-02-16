@@ -27,13 +27,13 @@ export const useLeaderboardStore = create((set) => ({
             if (append) {
                 set((state) => ({
                     leaderboard: [...state.leaderboard, ...res.data.leaderboard],
-                    pagination: res.data.pagination,
+                    pagination: res.data.pagination || state.pagination,
                     lastFetched: now,
                 }));
             } else {
                 set({
                     leaderboard: res.data.leaderboard,
-                    pagination: res.data.pagination,
+                    pagination: res.data.pagination || get().pagination,
                     lastFetched: now,
                 });
             }

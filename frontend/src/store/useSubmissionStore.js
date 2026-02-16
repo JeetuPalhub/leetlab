@@ -38,7 +38,7 @@ export const useSubmissionStore = create((set, get) => ({
       } else {
         set({
           submissions: res.data.submissions,
-          pagination: res.data.pagination,
+          pagination: res.data.pagination || get().pagination,
           lastFetched: now,
         });
       }
@@ -65,7 +65,7 @@ export const useSubmissionStore = create((set, get) => ({
       } else {
         set({
           submission: res.data.submissions,
-          pagination: res.data.pagination
+          pagination: res.data.pagination || get().pagination
         });
       }
     } catch (error) {

@@ -52,7 +52,7 @@ export const useProblemStore = create((set, get) => ({
       } else {
         set({
           problems: res.data.problems,
-          pagination: res.data.pagination,
+          pagination: res.data.pagination || get().pagination,
           lastFetched: now,
           searchParams: { search, difficulty, tags }
         });

@@ -19,7 +19,7 @@ const Discussion = ({ problemId }) => {
     }, [problemId, getComments]);
 
     const handleLoadMore = () => {
-        if (pagination.hasMore) {
+        if (pagination?.hasMore) {
             getComments(problemId, pagination.currentPage + 1, pagination.limit, true);
         }
     };
@@ -196,7 +196,7 @@ const Discussion = ({ problemId }) => {
                     ))}
 
                     {/* Load More Button */}
-                    {pagination.hasMore && (
+                    {pagination?.hasMore && (
                         <div className="flex justify-center mt-8 pb-8">
                             <button
                                 onClick={handleLoadMore}

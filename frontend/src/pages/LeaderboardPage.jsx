@@ -12,7 +12,7 @@ const LeaderboardPage = () => {
     }, []);
 
     const handleLoadMore = () => {
-        if (pagination.hasMore) {
+        if (pagination?.hasMore) {
             getLeaderboard(pagination.currentPage + 1, pagination.limit, true);
         }
     };

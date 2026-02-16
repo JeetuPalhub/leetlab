@@ -336,7 +336,7 @@ const ProblemPage = () => {
 
       case "submissions":
         const handleLoadMoreSubmissions = () => {
-          if (submissionPagination.hasMore) {
+          if (submissionPagination?.hasMore) {
             getSubmissionForProblem(id, submissionPagination.currentPage + 1, submissionPagination.limit, true);
           }
         };

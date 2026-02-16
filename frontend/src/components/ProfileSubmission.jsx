@@ -19,7 +19,7 @@ const ProfileSubmission = ({ userId }) => {
   }, [userId]);
 
   const handleLoadMore = () => {
-    if (pagination.hasMore) {
+    if (pagination?.hasMore) {
       getAllSubmissions(userId, pagination.currentPage + 1, pagination.limit, true);
     }
   };
@@ -98,7 +98,7 @@ const ProfileSubmission = ({ userId }) => {
 
         <div className="flex items-center gap-4">
           <div className="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm text-center min-w-[100px]">
-            <div className="text-xs font-black text-gray-900">{pagination.totalSubmissions || submissions.length}</div>
+            <div className="text-xs font-black text-gray-900">{pagination?.totalSubmissions || submissions.length}</div>
             <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Total Logs</div>
           </div>
           <div className="bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100 shadow-sm text-center min-w-[100px]">
@@ -245,7 +245,7 @@ const ProfileSubmission = ({ userId }) => {
             })}
 
             {/* Load More Button */}
-            {pagination.hasMore && (
+            {pagination?.hasMore && (
               <div className="flex justify-center mt-12 pb-12">
                 <button
                   onClick={handleLoadMore}

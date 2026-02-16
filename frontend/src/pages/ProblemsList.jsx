@@ -20,7 +20,7 @@ const ProblemsList = () => {
     }, [search, difficulty, selectedTag, getAllProblems]);
 
     const handleLoadMore = () => {
-        if (pagination.hasMore) {
+        if (pagination?.hasMore) {
             getAllProblems({
                 page: pagination.currentPage + 1,
                 search,

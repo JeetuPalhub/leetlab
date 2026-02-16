@@ -12,7 +12,7 @@ const ContestList = () => {
     }, []);
 
     const handleLoadMore = () => {
-        if (pagination.hasMore) {
+        if (pagination?.hasMore) {
             fetchContests(pagination.currentPage + 1, pagination.limit, true);
         }
     }

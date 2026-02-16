@@ -36,7 +36,7 @@ export const useCommentStore = create((set, get) => ({
             } else {
                 set({
                     comments: res.data.comments,
-                    pagination: res.data.pagination,
+                    pagination: res.data.pagination || get().pagination,
                     lastFetched: now,
                 });
             }

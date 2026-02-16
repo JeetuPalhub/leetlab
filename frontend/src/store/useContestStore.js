@@ -28,13 +28,13 @@ export const useContestStore = create((set, get) => ({
             if (append) {
                 set((state) => ({
                     contests: [...state.contests, ...res.data.contests],
-                    pagination: res.data.pagination,
+                    pagination: res.data.pagination || state.pagination,
                     lastFetched: now,
                 }));
             } else {
                 set({
                     contests: res.data.contests,
-                    pagination: res.data.pagination,
+                    pagination: res.data.pagination || get().pagination,
                     lastFetched: now,
                 });
             }
